@@ -11,13 +11,6 @@ function getScoreColor(score: number): string {
   return '#ef4444'
 }
 
-function buildRingPath(score: number): string {
-  const radius = 54
-  const circumference = 2 * Math.PI * radius
-  const offset = circumference - (score / 100) * circumference
-  return `stroke-dasharray: ${circumference}; stroke-dashoffset: ${offset}`
-}
-
 export function DailyScore({ score, breaksTaken, breaksOffered, avgBlinkRate }: DailyScoreProps) {
   const color = getScoreColor(score)
   const radius = 54

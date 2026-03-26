@@ -1,7 +1,9 @@
 import { StatusBanner } from './StatusBanner'
-import { BlinkRateChart, BlinkRateEntry } from './BlinkRateChart'
+import { BlinkRateChart } from './BlinkRateChart'
+import type { BlinkRateEntry } from './BlinkRateChart'
 import { DailyScore } from './DailyScore'
-import { SessionTimeline, Segment } from './SessionTimeline'
+import { SessionTimeline } from './SessionTimeline'
+import type { Segment } from './SessionTimeline'
 import { CameraStatusBar } from './CameraStatusBar'
 
 interface DashboardPageProps {
