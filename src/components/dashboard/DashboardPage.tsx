@@ -88,6 +88,8 @@ export function DashboardPage({
         confidence={cameraConfidence}
         wearsGlasses={wearsGlasses}
         fps={cameraFps}
+        totalBlinks={totalBlinks}
+        blinkRate={blinkRate}
         onPause={onCameraPause}
         onRecalibrate={onRecalibrate}
       />

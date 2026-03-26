@@ -3,6 +3,8 @@ interface CameraStatusBarProps {
   confidence?: number
   wearsGlasses?: boolean
   fps?: number
+  totalBlinks?: number
+  blinkRate?: number
   onPause?: () => void
   onRecalibrate?: () => void
 }
@@ -12,6 +14,8 @@ export function CameraStatusBar({
   confidence = 0,
   wearsGlasses = false,
   fps = 0,
+  totalBlinks = 0,
+  blinkRate = 0,
   onPause,
   onRecalibrate,
 }: CameraStatusBarProps) {
@@ -82,6 +86,20 @@ export function CameraStatusBar({
 
       <span style={labelStyle}>Glasses</span>
       <span style={valueStyle}>{wearsGlasses ? 'Detected' : 'Not detected'}</span>
+
+      <div style={dividerStyle} />
+
+      <span style={labelStyle}>Blinks</span>
+      <span style={{ ...valueStyle, color: '#4fc3f7', fontWeight: 700, fontSize: '15px' }}>{totalBlinks}</span>
+
+      <div style={dividerStyle} />
+
+      <span style={labelStyle}>Rate</span>
+      <span style={{
+        ...valueStyle,
+        color: blinkRate >= 12 ? '#22c55e' : blinkRate > 0 ? '#f59e0b' : '#94a3b8',
+        fontWeight: 700, fontSize: '15px',
+      }}>{blinkRate}/min</span>
 
       <div style={dividerStyle} />
 
