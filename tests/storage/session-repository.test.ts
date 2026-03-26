@@ -32,7 +32,7 @@ describe('SessionRepository', () => {
     await sessionRepo.startSession()
     const sessions = await sessionRepo.getSessionsByDateRange(
       new Date(Date.now() - 86400000),
-      new Date(Date.now() + 1000)
+      new Date()
     )
     expect(sessions).toHaveLength(1)
   })

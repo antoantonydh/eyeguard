@@ -42,7 +42,7 @@ export const sessionRepo = {
   async getSessionsByDateRange(from: Date, to: Date): Promise<Session[]> {
     return db.sessions
       .where('startTime')
-      .between(from, to)
+      .between(from, to, true, true)
       .toArray()
   },
 }

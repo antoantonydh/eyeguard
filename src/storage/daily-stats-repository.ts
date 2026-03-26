@@ -15,7 +15,7 @@ export const dailyStatsRepo = {
   async getRange(fromDate: string, toDate: string): Promise<DailyStats[]> {
     return db.dailyStats
       .where('date')
-      .between(fromDate, toDate)
+      .between(fromDate, toDate, true, true) // inclusive on both ends
       .toArray()
   },
 }
