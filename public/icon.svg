@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="80" fill="#0f1729"/>
+  <!-- Eye outline -->
+  <ellipse cx="256" cy="256" rx="180" ry="110" fill="none" stroke="#4fc3f7" stroke-width="24"/>
+  <!-- Iris -->
+  <circle cx="256" cy="256" r="72" fill="#4fc3f7" opacity="0.2"/>
+  <circle cx="256" cy="256" r="72" fill="none" stroke="#4fc3f7" stroke-width="20"/>
+  <!-- Pupil -->
+  <circle cx="256" cy="256" r="36" fill="#4fc3f7"/>
+  <!-- Eyelashes top -->
+  <line x1="256" y1="146" x2="256" y2="118" stroke="#4fc3f7" stroke-width="14" stroke-linecap="round"/>
+  <line x1="196" y1="158" x2="182" y2="132" stroke="#4fc3f7" stroke-width="14" stroke-linecap="round"/>
+  <line x1="316" y1="158" x2="330" y2="132" stroke="#4fc3f7" stroke-width="14" stroke-linecap="round"/>
+</svg>

@@ -171,11 +171,32 @@ export function useEyeGuard() {
     startSession()
 
     const handleVisibilityChange = () => {
+      // On tab hide: only save to DB on actual page unload, not tab switch
+      // Detection pauses automatically (rAF stops), but session stays alive
       if (document.visibilityState === 'hidden') {
-        endSession()
-      } else {
-        startSession()
+        // Save current stats to DB without ending the session ID
+        // so data isn't lost if the user closes mid-session
+        void dailyStatsRepo.getByDate(todayString()).then(async (existing) => {
+          const sessionMinutes = sessionStartRef.current
+            ? Math.round((Date.now() - sessionStartRef.current.getTime()) / 60000)
+            : 0
+          await dailyStatsRepo.upsert(todayString(), {
+            totalScreenTime: (existing?.totalScreenTime ?? 0) + sessionMinutes,
+            avgBlinkRate: detection.blinkRate > 0 ? detection.blinkRate : (existing?.avgBlinkRate ?? 0),
+            breaksTaken: (existing?.breaksTaken ?? 0) + alerts.breaksTaken,
+            breaksSkipped: (existing?.breaksSkipped ?? 0) + (alerts.breaksOffered - alerts.breaksTaken),
+            stareAlerts: (existing?.stareAlerts ?? 0) + detection.stareAlerts,
+            score: calculateScore({
+              avgBlinkRate: detection.blinkRate,
+              breaksTaken: alerts.breaksTaken,
+              breaksOffered: alerts.breaksOffered,
+              stareAlerts: detection.stareAlerts,
+              blinkThreshold: settings.blinkThreshold,
+            }),
+          })
+        })
       }
+      // No action on visibility restore — detection resumes automatically via rAF
     }
 
     const handleBeforeUnload = () => {

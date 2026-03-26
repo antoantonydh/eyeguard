@@ -1,4 +1,10 @@
 import { NavLink } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt(): Promise<void>
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
+}
 
 interface TopNavProps {
   isTrackingActive: boolean
@@ -61,9 +67,30 @@ const toggleButtonStyle = (isActive: boolean): React.CSSProperties => ({
 })
 
 export function TopNav({ isTrackingActive, onToggleTracking }: TopNavProps) {
+  const [installPrompt, setInstallPrompt] = useState<Event | null>(null)
+  const [isInstalled, setIsInstalled] = useState(false)
+
+  useEffect(() => {
+    const handler = (e: Event) => { e.preventDefault(); setInstallPrompt(e) }
+    window.addEventListener('beforeinstallprompt', handler)
+    window.addEventListener('appinstalled', () => setIsInstalled(true))
+    // Check if already running as installed PWA
+    if (window.matchMedia('(display-mode: standalone)').matches) setIsInstalled(true)
+    return () => window.removeEventListener('beforeinstallprompt', handler)
+  }, [])
+
+  const handleInstall = async () => {
+    if (!installPrompt) return
+    const prompt = installPrompt as BeforeInstallPromptEvent
+    await prompt.prompt()
+    const { outcome } = await prompt.userChoice
+    if (outcome === 'accepted') setIsInstalled(true)
+    setInstallPrompt(null)
+  }
+
   return (
     <nav style={navStyle}>
-      <span style={brandStyle}>EyeGuard</span>
+      <span style={brandStyle}>👁 EyeGuard</span>
 
       <div style={linksStyle}>
         <NavLink to="/" end style={navLinkStyle}>
@@ -77,13 +104,29 @@ export function TopNav({ isTrackingActive, onToggleTracking }: TopNavProps) {
         </NavLink>
       </div>
 
-      <button
-        style={toggleButtonStyle(isTrackingActive)}
-        onClick={onToggleTracking}
-        aria-label={isTrackingActive ? 'Stop camera tracking' : 'Start camera tracking'}
-      >
-        {isTrackingActive ? 'Camera: ON' : 'Camera: OFF'}
-      </button>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        {installPrompt && !isInstalled && (
+          <button
+            onClick={handleInstall}
+            title="Install EyeGuard as a standalone app — runs in its own window so tab-switching doesn't pause tracking"
+            style={{
+              padding: '6px 14px', borderRadius: 6,
+              border: '1px solid #22c55e', background: 'rgba(34,197,94,0.12)',
+              color: '#22c55e', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+            }}
+          >
+            ⬇ Install App
+          </button>
+        )}
+
+        <button
+          style={toggleButtonStyle(isTrackingActive)}
+          onClick={onToggleTracking}
+          aria-label={isTrackingActive ? 'Stop camera tracking' : 'Start camera tracking'}
+        >
+          {isTrackingActive ? 'Camera: ON' : 'Camera: OFF'}
+        </button>
+      </div>
     </nav>
   )
 }

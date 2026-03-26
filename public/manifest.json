@@ -1,0 +1,18 @@
+{
+  "name": "EyeGuard",
+  "short_name": "EyeGuard",
+  "description": "Eye fatigue prevention — monitors your blink rate via webcam",
+  "start_url": "/eyeguard/",
+  "scope": "/eyeguard/",
+  "display": "standalone",
+  "background_color": "#0f1729",
+  "theme_color": "#4fc3f7",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
