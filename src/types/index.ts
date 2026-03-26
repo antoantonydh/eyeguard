@@ -27,12 +27,12 @@ export interface DailyStats {
 }
 
 export interface Settings {
-  breakInterval: number  // minutes, default 20
-  breakDuration: number  // seconds, default 20
-  blinkThreshold: number // blinks/min, default 12
-  stareDelay: number     // seconds, default 5
-  cameraFps: number      // default 15
-  soundEnabled: boolean  // default false
+  breakInterval: number  // minutes, default 20 (AOA/AAO consensus)
+  breakDuration: number  // seconds, default 60 (20s shown ineffective, 60-120s recommended)
+  blinkThreshold: number // blinks/min, default 12 (healthy avg ~14, alert below 12)
+  stareDelay: number     // seconds, default 10 (normal interblink ~6s, alert at 10s)
+  cameraFps: number      // default 24 (need 3+ frames per 100ms blink)
+  soundEnabled: boolean  // default true (health apps need sound for compliance)
 }
 
 export interface UserProfile {
@@ -45,9 +45,9 @@ export interface UserProfile {
 
 export const DEFAULT_SETTINGS: Settings = {
   breakInterval: 20,
-  breakDuration: 20,
+  breakDuration: 60,
   blinkThreshold: 12,
-  stareDelay: 5,
-  cameraFps: 15,
-  soundEnabled: false,
+  stareDelay: 10,
+  cameraFps: 24,
+  soundEnabled: true,
 }
