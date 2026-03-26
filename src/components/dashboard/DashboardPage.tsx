@@ -72,18 +72,6 @@ export function DashboardPage({
     <div style={pageStyle}>
       <StatusBanner blinkRate={blinkRate} minutesUntilBreak={minutesUntilBreak} facePresence={facePresence} />
 
-      <div style={rowStyle}>
-        <BlinkRateChart data={blinkHistory} threshold={blinkThreshold} />
-        <DailyScore
-          score={score}
-          breaksTaken={breaksTaken}
-          breaksOffered={breaksOffered}
-          avgBlinkRate={avgBlinkRate}
-        />
-      </div>
-
-      <SessionTimeline segments={segments} />
-
       <CameraStatusBar
         isActive={cameraActive}
         confidence={cameraConfidence}
@@ -95,6 +83,18 @@ export function DashboardPage({
         onPause={onCameraPause}
         onRecalibrate={onRecalibrate}
       />
+
+      <div style={rowStyle}>
+        <BlinkRateChart data={blinkHistory} threshold={blinkThreshold} />
+        <DailyScore
+          score={score}
+          breaksTaken={breaksTaken}
+          breaksOffered={breaksOffered}
+          avgBlinkRate={avgBlinkRate}
+        />
+      </div>
+
+      <SessionTimeline segments={segments} />
 
       <DebugPanel
         stream={stream}
