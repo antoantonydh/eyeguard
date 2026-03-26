@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { BreakTimer } from '../alerts/break-timer'
-import { determineAlert, type AlertState, type DetectionState } from '../alerts/alert-manager'
+import { determineAlert, type DetectionState } from '../alerts/alert-manager'
 import type { Settings } from '../types'
 
 interface UseAlertsInput {
@@ -13,10 +13,12 @@ interface UseAlertsInput {
 
 export function useAlerts(input: UseAlertsInput) {
   const { blinkRate, isStaring, secondsSinceLastBlink, settings, isTracking } = input
-  const [alert, setAlert] = useState<AlertState | null>(null)
   const [isBreakDue, setIsBreakDue] = useState(false)
   const [isBreakActive, setIsBreakActive] = useState(false)
   const [breakCountdown, setBreakCountdown] = useState(0)
+  const [minutesUntilBreak, setMinutesUntilBreak] = useState(settings.breakInterval)
+  const [breaksOffered, setBreaksOffered] = useState(0)
+  const [breaksTaken, setBreaksTaken] = useState(0)
   const timerRef = useRef<BreakTimer | null>(null)
 
   useEffect(() => {
@@ -24,28 +26,33 @@ export function useAlerts(input: UseAlertsInput) {
     const timer = new BreakTimer({
       intervalMinutes: settings.breakInterval,
       breakDurationSeconds: settings.breakDuration,
-      onBreakDue: () => setIsBreakDue(true),
-      onBreakComplete: () => { setIsBreakActive(false); setIsBreakDue(false); setBreakCountdown(0) },
+      onBreakDue: () => { setIsBreakDue(true); setBreaksOffered(prev => prev + 1) },
+      onBreakComplete: (taken) => {
+        setIsBreakActive(false); setIsBreakDue(false); setBreakCountdown(0)
+        if (taken) setBreaksTaken(prev => prev + 1)
+      },
     })
     timer.start()
     timerRef.current = timer
-    return () => timer.stop()
+
+    const interval = setInterval(() => {
+      if (timerRef.current) {
+        setMinutesUntilBreak(timerRef.current.minutesUntilBreak)
+      }
+    }, 1000)
+
+    return () => { timer.stop(); clearInterval(interval) }
   }, [isTracking, settings.breakInterval, settings.breakDuration])
 
-  useEffect(() => {
+  const alert = useMemo(() => {
     const detectionState: DetectionState = {
       blinkRate, isStaring, secondsSinceLastBlink, isBreakDue, isBreakActive, breakCountdown,
     }
-    const newAlert = determineAlert(detectionState, settings.blinkThreshold, settings.stareDelay)
-    setAlert(newAlert)
+    return determineAlert(detectionState, settings.blinkThreshold, settings.stareDelay)
   }, [blinkRate, isStaring, secondsSinceLastBlink, isBreakDue, isBreakActive, breakCountdown, settings])
 
   const startBreak = useCallback(() => { setIsBreakActive(true); setIsBreakDue(false); timerRef.current?.startBreakCountdown() }, [])
   const skipBreak = useCallback(() => { timerRef.current?.skipBreak(); setIsBreakDue(false); setIsBreakActive(false) }, [])
-
-  const minutesUntilBreak = timerRef.current?.minutesUntilBreak ?? settings.breakInterval
-  const breaksOffered = timerRef.current?.breaksOffered ?? 0
-  const breaksTaken = timerRef.current?.breaksTaken ?? 0
 
   return { alert, startBreak, skipBreak, minutesUntilBreak, breaksOffered, breaksTaken }
 }
