@@ -7,6 +7,7 @@ import { SettingsPage } from './components/settings/SettingsPage'
 import { OverlayManager } from './components/overlays/OverlayManager'
 import { OnboardingFlow } from './components/onboarding/OnboardingFlow'
 import { useEyeGuard } from './hooks/use-eye-guard'
+import { requestNotificationPermission } from './utils/notifications'
 
 export default function App() {
   const {
@@ -30,6 +31,13 @@ export default function App() {
 
   const wantTrackingRef = useRef(false)
   const hasAutoStarted = useRef(false)
+
+  // Request notification permission if setting is enabled
+  useEffect(() => {
+    if (settings.nativeNotifications) {
+      requestNotificationPermission()
+    }
+  }, [settings.nativeNotifications])
 
   // Auto-start after onboarding
   useEffect(() => {

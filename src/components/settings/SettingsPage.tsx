@@ -1,5 +1,7 @@
+import { useState, useEffect } from 'react'
 import { useSettings } from '../../hooks/use-settings'
 import { userProfileRepo } from '../../storage/user-profile-repository'
+import { requestNotificationPermission } from '../../utils/notifications'
 
 interface SettingInfo {
   text: string
@@ -126,6 +128,23 @@ const dividerStyle: React.CSSProperties = { border: 'none', borderTop: '1px soli
 
 export function SettingsPage() {
   const { settings, loading, updateSettings } = useSettings()
+  const [notifPermission, setNotifPermission] = useState<NotificationPermission>('default')
+
+  useEffect(() => {
+    if ('Notification' in window) setNotifPermission(Notification.permission)
+  }, [])
+
+  const handleNativeNotifToggle = async (enabled: boolean) => {
+    if (enabled && Notification.permission !== 'granted') {
+      const granted = await requestNotificationPermission()
+      if (!granted) {
+        setNotifPermission('denied')
+        return // don't save setting if permission denied
+      }
+      setNotifPermission('granted')
+    }
+    updateSettings({ nativeNotifications: enabled })
+  }
 
   if (loading) {
     return <div style={{ ...pageStyle, color: '#546e7a', fontSize: '14px' }}>Loading settings...</div>
@@ -236,6 +255,22 @@ export function SettingsPage() {
           </label>
           <InfoTooltip settingKey="soundEnabled" />
         </div>
+
+        <hr style={dividerStyle} />
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <input id="nativeNotifications" type="checkbox" checked={settings.nativeNotifications}
+            onChange={e => handleNativeNotifToggle(e.target.checked)}
+            style={{ width: 16, height: 16, accentColor: '#4fc3f7', cursor: 'pointer' }} />
+          <label htmlFor="nativeNotifications" style={{ color: '#b0bec5', fontSize: 14, cursor: 'pointer' }}>
+            OS notifications when minimized
+          </label>
+        </div>
+        {notifPermission === 'denied' && (
+          <p style={{ color: '#f44336', fontSize: 12, margin: 0 }}>
+            Notification permission denied. Enable it in your browser/OS settings.
+          </p>
+        )}
 
         <p style={{ color: '#4fc3f7', fontSize: 12, fontWeight: 500, textAlign: 'center' }}>
           Changes saved automatically

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { BreakTimer } from '../alerts/break-timer'
 import { determineAlert, type DetectionState } from '../alerts/alert-manager'
 import type { Settings, FacePresence } from '../types'
+import { sendNativeNotification } from '../utils/notifications'
 
 interface UseAlertsInput {
   blinkRate: number
@@ -30,7 +31,17 @@ export function useAlerts(input: UseAlertsInput) {
     const timer = new BreakTimer({
       intervalMinutes: settings.breakInterval,
       breakDurationSeconds: settings.breakDuration,
-      onBreakDue: () => { setIsBreakDue(true); setBreaksOffered(prev => prev + 1) },
+      onBreakDue: () => {
+        setIsBreakDue(true)
+        setBreaksOffered(prev => prev + 1)
+        if (settings.nativeNotifications) {
+          sendNativeNotification({
+            title: '👁 Time for a Break',
+            body: `Look at something 20 feet away for ${settings.breakDuration} seconds to rest your eyes.`,
+            tag: 'eyeguard-break',
+          })
+        }
+      },
       onBreakComplete: (taken) => {
         setIsBreakActive(false); setIsBreakDue(false); setBreakCountdown(0)
         if (taken) setBreaksTaken(prev => prev + 1)
@@ -64,7 +75,18 @@ export function useAlerts(input: UseAlertsInput) {
       blinkRate, isStaring, secondsSinceLastBlink, isBreakDue, isBreakActive,
       breakCountdown, lowBlinkDurationSeconds, facePresence,
     }
-    return determineAlert(detectionState, settings.blinkThreshold, settings.stareDelay)
+    const result = determineAlert(detectionState, settings.blinkThreshold, settings.stareDelay)
+
+    // Fire OS notification for blink alert when app is in background
+    if (result?.type === 'blink' && settings.nativeNotifications) {
+      sendNativeNotification({
+        title: '👁 Remember to Blink',
+        body: result.message,
+        tag: 'eyeguard-blink',
+      })
+    }
+
+    return result
   }, [blinkRate, isStaring, secondsSinceLastBlink, lowBlinkDurationSeconds, facePresence, isBreakDue, isBreakActive, breakCountdown, settings])
 
   const startBreak = useCallback(() => { setIsBreakActive(true); setIsBreakDue(false); timerRef.current?.startBreakCountdown() }, [])

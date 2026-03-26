@@ -34,8 +34,9 @@ export interface Settings {
   blinkThreshold: number // blinks/min, default 12 (healthy avg ~14, alert below 12)
   stareDelay: number     // seconds, default 10 (normal interblink ~6s, alert at 10s)
   cameraFps: number      // default 24 (need 3+ frames per 100ms blink)
-  chartInterval: number  // seconds between chart data points, default 30
-  soundEnabled: boolean  // default true (health apps need sound for compliance)
+  chartInterval: number       // seconds between chart data points, default 60
+  soundEnabled: boolean       // default true (health apps need sound for compliance)
+  nativeNotifications: boolean // OS notifications when app is minimized, default true
 }
 
 export interface UserProfile {
@@ -54,4 +55,5 @@ export const DEFAULT_SETTINGS: Settings = {
   cameraFps: 24,
   chartInterval: 60,
   soundEnabled: true,
+  nativeNotifications: true,
 }
