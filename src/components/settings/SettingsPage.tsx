@@ -49,50 +49,40 @@ function InfoTooltip({ settingKey }: { settingKey: string }) {
   const info = SETTING_INFO[settingKey]
   if (!info) return null
 
-  const tooltipId = `tooltip-${settingKey}`
+  const cls = `info-tip-${settingKey}`
 
   return (
-    <span className="info-tooltip-wrap" style={{ position: 'relative', display: 'inline-flex', marginLeft: 8 }}>
-      <span
-        className={`info-trigger-${tooltipId}`}
-        style={{
-          background: 'none', border: '1px solid #334', borderRadius: '50%',
-          width: 18, height: 18, color: '#4fc3f7', fontSize: 10, fontWeight: 700,
-          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-          cursor: 'help', flexShrink: 0,
-        }}
-      >
-        i
-      </span>
-      <span
-        className={`info-popup-${tooltipId}`}
-        style={{
-          position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)',
-          background: '#0d1520', border: '1px solid #1e2d4d', borderRadius: 8,
-          padding: '10px 14px', fontSize: 12, lineHeight: 1.5, color: '#94a3b8',
-          width: 300, marginBottom: 8, pointerEvents: 'none',
-          opacity: 0, transition: 'opacity 0.15s', zIndex: 100,
-          boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
-        }}
-      >
+    <span className={cls} style={{ position: 'relative', display: 'inline-flex', marginLeft: 8 }}>
+      <span style={{
+        background: 'none', border: '1px solid #334', borderRadius: '50%',
+        width: 18, height: 18, color: '#4fc3f7', fontSize: 10, fontWeight: 700,
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        cursor: 'help', flexShrink: 0,
+      }}>i</span>
+      <span className={`${cls}-popup`} style={{
+        position: 'absolute', bottom: 'calc(100% + 4px)', left: '50%', transform: 'translateX(-50%)',
+        background: '#0d1520', border: '1px solid #1e2d4d', borderRadius: 8,
+        padding: '12px 16px', fontSize: 12, lineHeight: 1.5, color: '#94a3b8',
+        width: 300, opacity: 0, transition: 'opacity 0.15s, visibility 0.15s',
+        visibility: 'hidden', zIndex: 100,
+        boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+      }}>
+        {/* Invisible bridge to prevent gap-hover-loss */}
+        <span style={{
+          position: 'absolute', bottom: -8, left: 0, right: 0, height: 8,
+        }} />
         {info.text}
-        <a
-          href={info.sourceUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
-            display: 'block', marginTop: 6, color: '#4fc3f7', fontSize: 11,
-            textDecoration: 'underline',
-          }}
-        >
-          Source: {info.sourceLabel}
-        </a>
+        {info.sourceUrl && (
+          <a href={info.sourceUrl} target="_blank" rel="noopener noreferrer"
+            style={{ display: 'block', marginTop: 6, color: '#4fc3f7', fontSize: 11, textDecoration: 'underline' }}>
+            Source: {info.sourceLabel}
+          </a>
+        )}
       </span>
       <style>{`
-        .info-trigger-${tooltipId}:hover + .info-popup-${tooltipId},
-        .info-popup-${tooltipId}:hover {
+        .${cls}:hover .${cls}-popup {
           opacity: 1 !important;
-          pointer-events: auto !important;
+          visibility: visible !important;
         }
       `}</style>
     </span>
