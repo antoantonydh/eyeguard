@@ -208,9 +208,10 @@ export function useEyeGuard() {
   const blinkRateRef = useRef(0)
   const hasFirstDataPointRef = useRef(false)
 
-  // Load today's historical chart data from IndexedDB on mount
+  // Load today's historical chart + timeline data from IndexedDB on mount
   useEffect(() => {
-    async function loadHistoricalChart() {
+    if (settingsLoading) return
+    async function loadHistoricalData() {
       const startOfDay = new Date()
       startOfDay.setHours(0, 0, 0, 0)
       const now = new Date()
@@ -219,8 +220,9 @@ export function useEyeGuard() {
       if (events.length === 0) return
 
       const intervalMs = settings.chartInterval * 1000
+      const blinkThreshold = settings.blinkThreshold
 
-      // Group blink events into chartInterval buckets, counting blinks per bucket
+      // Group blink events into chartInterval buckets
       const buckets = new Map<number, number>()
       for (const event of events) {
         const t = event.timestamp instanceof Date ? event.timestamp : new Date(event.timestamp)
@@ -228,12 +230,11 @@ export function useEyeGuard() {
         buckets.set(bucket, (buckets.get(bucket) ?? 0) + 1)
       }
 
-      // Convert counts to blinks/min (count per bucket scaled to 60s)
-      const secondsPerBucket = settings.chartInterval
-      const blinksPerMinuteScale = 60 / secondsPerBucket
+      const blinksPerMinuteScale = 60 / settings.chartInterval
+      const sortedBuckets = Array.from(buckets.entries()).sort(([a], [b]) => a - b)
 
-      const entries: BlinkRateEntry[] = Array.from(buckets.entries())
-        .sort(([a], [b]) => a - b)
+      // Build chart entries
+      const entries: BlinkRateEntry[] = sortedBuckets
         .slice(-MAX_CHART_POINTS)
         .map(([ts, count]) => ({
           time: new Date(ts),
@@ -245,24 +246,53 @@ export function useEyeGuard() {
         setChartData(entries)
         hasFirstDataPointRef.current = true
       }
+
+      // Build timeline segments from per-minute blink rates
+      const ONE_MIN_MS = 60_000
+      const minuteBuckets = new Map<number, number>()
+      for (const event of events) {
+        const t = event.timestamp instanceof Date ? event.timestamp : new Date(event.timestamp)
+        const min = Math.floor(t.getTime() / ONE_MIN_MS) * ONE_MIN_MS
+        minuteBuckets.set(min, (minuteBuckets.get(min) ?? 0) + 1)
+      }
+
+      const sortedMinutes = Array.from(minuteBuckets.entries()).sort(([a], [b]) => a - b)
+      const segments: Segment[] = []
+      let currentType: Segment['type'] | null = null
+      let currentDuration = 0
+
+      for (const [, count] of sortedMinutes) {
+        const segType: Segment['type'] = count >= blinkThreshold ? 'healthy' : 'low-blink'
+        if (segType === currentType) {
+          currentDuration++
+        } else {
+          if (currentType !== null) segments.push({ type: currentType, durationMinutes: currentDuration })
+          currentType = segType
+          currentDuration = 1
+        }
+      }
+      if (currentType !== null) segments.push({ type: currentType, durationMinutes: currentDuration })
+
+      if (segments.length > 0) {
+        segmentsRef.current = segments
+        setTimelineSegments(segments)
+      }
     }
 
-    loadHistoricalChart()
-  // Run once on mount after settings load
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [settingsLoading])
+    loadHistoricalData()
+  }, [settingsLoading, settings.chartInterval, settings.blinkThreshold])
 
   // Keep a fresh reference to blinkRate for the interval callback
   // Also update chart immediately when blinkRate first becomes non-zero
   useEffect(() => {
     blinkRateRef.current = detection.blinkRate
 
-    // Add first data point as soon as we get a real reading
+    // Add first data point as soon as we get a real reading (append to historical, don't replace)
     if (detection.blinkRate > 0 && !hasFirstDataPointRef.current && detection.isTracking) {
       hasFirstDataPointRef.current = true
       const entry: BlinkRateEntry = { time: new Date(), rate: detection.blinkRate }
-      chartDataRef.current = [entry]
-      setChartData([entry])
+      chartDataRef.current = [...chartDataRef.current.slice(-MAX_CHART_POINTS + 1), entry]
+      setChartData([...chartDataRef.current])
     }
     if (!detection.isTracking) {
       hasFirstDataPointRef.current = false
@@ -273,10 +303,7 @@ export function useEyeGuard() {
     if (!detection.isTracking) return
 
     const intervalMs = settings.chartInterval * 1000
-
-    // Reset chart on tracking start
-    chartDataRef.current = []
-    setChartData([])
+    // Don't reset chart — keep historical data and append to it
 
     const interval = setInterval(() => {
       const rate = blinkRateRef.current
