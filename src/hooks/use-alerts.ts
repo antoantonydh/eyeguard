@@ -23,6 +23,8 @@ export function useAlerts(input: UseAlertsInput) {
   const [breaksTaken, setBreaksTaken] = useState(0)
   const timerRef = useRef<BreakTimer | null>(null)
 
+  const BREAK_TIMER_KEY = 'eyeguard_break_timer_start'
+
   useEffect(() => {
     if (!isTracking) return
     const timer = new BreakTimer({
@@ -34,7 +36,18 @@ export function useAlerts(input: UseAlertsInput) {
         if (taken) setBreaksTaken(prev => prev + 1)
       },
     })
-    timer.start()
+
+    // Restore timer position from previous session if within the same day
+    const saved = localStorage.getItem(BREAK_TIMER_KEY)
+    const savedTs = saved ? parseInt(saved, 10) : null
+    const isToday = savedTs && (Date.now() - savedTs) < 24 * 60 * 60 * 1000
+    if (isToday && savedTs) {
+      timer.start(savedTs)
+    } else {
+      const now = Date.now()
+      localStorage.setItem(BREAK_TIMER_KEY, String(now))
+      timer.start(now)
+    }
     timerRef.current = timer
 
     const interval = setInterval(() => {
@@ -59,7 +72,9 @@ export function useAlerts(input: UseAlertsInput) {
 
   const resetBreakTimer = useCallback(() => {
     timerRef.current?.reset()
-    timerRef.current?.start()
+    const now = Date.now()
+    localStorage.setItem('eyeguard_break_timer_start', String(now))
+    timerRef.current?.start(now)
     setIsBreakDue(false)
     setIsBreakActive(false)
     setBreakCountdown(0)
