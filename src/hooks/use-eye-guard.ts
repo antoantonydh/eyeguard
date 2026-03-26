@@ -18,7 +18,7 @@ function todayString(): string {
 }
 
 export function useEyeGuard() {
-  const { settings, profile, loading: settingsLoading, isCalibrated, updateSettings } = useSettings()
+  const { settings, profile, loading: settingsLoading, isCalibrated, updateSettings, reload: reloadSettings } = useSettings()
   const baselineEAR = profile?.baselineEAR ?? 0.25
 
   const camera = useCamera()
@@ -231,5 +231,6 @@ export function useEyeGuard() {
     timelineSegments,
     totalSessionTime,
     baselineEAR,
+    reloadSettings,
   }
 }

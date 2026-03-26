@@ -19,6 +19,7 @@ export default function App() {
     videoRef,
     chartData,
     timelineSegments,
+    reloadSettings,
   } = useEyeGuard()
 
   const wantTrackingRef = useRef(false)
@@ -56,6 +57,7 @@ export default function App() {
         <video ref={videoRef} autoPlay playsInline muted style={{ display: 'none' }} />
         <OnboardingFlow onComplete={() => {
           hasAutoStarted.current = false
+          reloadSettings()
         }} />
       </>
     )
