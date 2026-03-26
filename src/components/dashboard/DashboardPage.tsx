@@ -1,4 +1,5 @@
 import type { FacePresence } from '../../types'
+import type { CameraDevice } from '../../hooks/use-camera'
 import { StatusBanner } from './StatusBanner'
 import { BlinkRateChart } from './BlinkRateChart'
 import type { BlinkRateEntry } from './BlinkRateChart'
@@ -27,6 +28,9 @@ interface DashboardPageProps {
   secondsSinceLastBlink?: number
   totalBlinks?: number
   facePresence?: FacePresence
+  cameraDevices?: CameraDevice[]
+  selectedCameraId?: string
+  onSwitchCamera?: (deviceId: string) => void
   onCameraPause?: () => void
   onRecalibrate?: () => void
 }
@@ -65,6 +69,9 @@ export function DashboardPage({
   secondsSinceLastBlink = 0,
   totalBlinks = 0,
   facePresence = 'absent',
+  cameraDevices = [],
+  selectedCameraId = '',
+  onSwitchCamera,
   onCameraPause,
   onRecalibrate,
 }: DashboardPageProps) {
@@ -80,6 +87,9 @@ export function DashboardPage({
         totalBlinks={totalBlinks}
         blinkRate={blinkRate}
         facePresence={facePresence}
+        devices={cameraDevices}
+        selectedDeviceId={selectedCameraId}
+        onSwitchCamera={onSwitchCamera}
         onPause={onCameraPause}
         onRecalibrate={onRecalibrate}
       />

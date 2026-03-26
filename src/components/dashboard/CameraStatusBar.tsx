@@ -1,4 +1,5 @@
 import type { FacePresence } from '../../types'
+import type { CameraDevice } from '../../hooks/use-camera'
 
 interface CameraStatusBarProps {
   isActive?: boolean
@@ -8,6 +9,9 @@ interface CameraStatusBarProps {
   totalBlinks?: number
   blinkRate?: number
   facePresence?: FacePresence
+  devices?: CameraDevice[]
+  selectedDeviceId?: string
+  onSwitchCamera?: (deviceId: string) => void
   onPause?: () => void
   onRecalibrate?: () => void
 }
@@ -20,6 +24,9 @@ export function CameraStatusBar({
   totalBlinks = 0,
   blinkRate = 0,
   facePresence = 'absent',
+  devices = [],
+  selectedDeviceId = '',
+  onSwitchCamera,
   onPause,
   onRecalibrate,
 }: CameraStatusBarProps) {
@@ -121,6 +128,22 @@ export function CameraStatusBar({
       <span style={valueStyle}>{fps}</span>
 
       <div style={{ flex: 1 }} />
+
+      {devices.length > 1 && (
+        <select
+          value={selectedDeviceId}
+          onChange={e => onSwitchCamera?.(e.target.value)}
+          title="Switch camera"
+          style={{
+            background: '#1e2d4a', border: '1px solid #334', color: '#94a3b8',
+            borderRadius: 6, padding: '5px 8px', fontSize: 12, cursor: 'pointer',
+          }}
+        >
+          {devices.map(d => (
+            <option key={d.deviceId} value={d.deviceId}>{d.label}</option>
+          ))}
+        </select>
+      )}
 
       <button style={buttonStyle('secondary')} onClick={onPause}>
         {isActive ? 'Pause' : 'Resume'}

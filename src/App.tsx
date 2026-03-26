@@ -123,6 +123,13 @@ export default function App() {
                   secondsSinceLastBlink={detection.secondsSinceLastBlink}
                   totalBlinks={totalBlinks}
                   facePresence={detection.facePresence}
+                  cameraDevices={camera.devices}
+                  selectedCameraId={camera.selectedDeviceId}
+                  onSwitchCamera={async (deviceId) => {
+                    detection.stopTracking()
+                    await camera.switchCamera(deviceId)
+                    detection.startTracking()
+                  }}
                   onCameraPause={() => {
                     wantTrackingRef.current = false
                     detection.stopTracking()
