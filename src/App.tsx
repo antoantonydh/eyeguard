@@ -91,7 +91,7 @@ export default function App() {
     <>
       <video ref={videoRef} autoPlay playsInline muted style={{ display: 'none' }} />
 
-      <BrowserRouter>
+      <BrowserRouter basename="/eyeguard">
         <Routes>
           <Route
             element={
