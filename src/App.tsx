@@ -125,7 +125,7 @@ export default function App() {
                   onRecalibrate={() => {
                     detection.stopTracking()
                     camera.stop()
-                    window.location.reload()
+                    window.location.href = '/'
                   }}
                 />
               }

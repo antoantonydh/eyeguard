@@ -252,7 +252,7 @@ export function SettingsPage() {
             onClick={async () => {
               if (window.confirm('Delete all EyeGuard data and restart?')) {
                 await userProfileRepo.resetAll()
-                window.location.reload()
+                window.location.href = '/'
               }
             }}
             style={{
