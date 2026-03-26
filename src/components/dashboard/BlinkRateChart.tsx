@@ -11,12 +11,11 @@ interface BlinkRateChartProps {
 }
 
 const DEFAULT_THRESHOLD = 12
-const Y_AXIS_STEPS = [0, 10, 20, 30]
+const BAR_ZONE_PX = 140   // fixed pixel height of the bar drawing area
+const LABEL_HEIGHT_PX = 18 // value label above each bar
+const TIME_HEIGHT_PX = 16  // time label below each bar
 
 export function BlinkRateChart({ data = [], threshold = DEFAULT_THRESHOLD }: BlinkRateChartProps) {
-  const maxRate = Math.max(...data.map(d => d.rate), 30)
-  const chartHeight = 180
-
   if (data.length === 0) {
     return (
       <div style={containerStyle}>
@@ -30,7 +29,18 @@ export function BlinkRateChart({ data = [], threshold = DEFAULT_THRESHOLD }: Bli
     )
   }
 
+  const maxRate = Math.max(...data.map(d => d.rate), threshold + 5)
+  // Round maxRate up to a clean number for the Y-axis
+  const yMax = Math.ceil(maxRate / 5) * 5
   const avg = Math.round(data.reduce((s, d) => s + d.rate, 0) / data.length)
+
+  // Y-axis gridline values: 0, and steps up to yMax
+  const step = yMax <= 20 ? 5 : 10
+  const ySteps: number[] = []
+  for (let v = 0; v <= yMax; v += step) ySteps.push(v)
+
+  const toPx = (rate: number) => Math.max(2, (rate / yMax) * BAR_ZONE_PX)
+  const thresholdPx = toPx(threshold)
 
   return (
     <div style={containerStyle}>
@@ -42,99 +52,129 @@ export function BlinkRateChart({ data = [], threshold = DEFAULT_THRESHOLD }: Bli
         </span>
       </div>
 
-      {/* Chart area with Y-axis */}
-      <div style={{ display: 'flex', gap: 8 }}>
-        {/* Y-axis labels */}
+      {/* Chart body: Y-axis + bar area */}
+      <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+
+        {/* Y-axis labels — positioned over the bar zone + label space */}
         <div style={{
-          display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-          height: chartHeight, paddingBottom: 20, /* align with bar area */
+          width: 24, flexShrink: 0,
+          height: BAR_ZONE_PX + LABEL_HEIGHT_PX,
+          position: 'relative',
         }}>
-          {[...Y_AXIS_STEPS].reverse().map(v => (
-            <span key={v} style={{ color: '#475569', fontSize: 10, textAlign: 'right', width: 20, lineHeight: '1' }}>
+          {ySteps.map(v => (
+            <span key={v} style={{
+              position: 'absolute',
+              bottom: (v / yMax) * BAR_ZONE_PX,
+              right: 0,
+              color: '#475569', fontSize: 10, lineHeight: '1',
+              transform: 'translateY(50%)',
+            }}>
               {v}
             </span>
           ))}
         </div>
 
-        {/* Bars area */}
+        {/* Bar + gridline area */}
         <div style={{ flex: 1, position: 'relative' }}>
-          {/* Gridlines */}
-          {Y_AXIS_STEPS.map(v => (
-            <div key={v} style={{
-              position: 'absolute', left: 0, right: 0,
-              bottom: `${(v / maxRate) * 100}%`,
-              borderTop: '1px solid #1e293b',
-              height: 0, zIndex: 0,
-              marginBottom: -20 * (v / maxRate), /* offset for bar area padding */
-            }} />
-          ))}
 
-          {/* Threshold line */}
-          <div style={{
-            position: 'absolute', left: 0, right: 0,
-            bottom: `calc(${(threshold / maxRate) * 100}% + 20px)`, /* 20px accounts for time labels */
-            borderTop: '2px dashed #f97316', zIndex: 2,
-          }}>
-            <span style={{
-              position: 'absolute', right: 0, top: -16,
-              color: '#f97316', fontSize: 10, fontWeight: 600, background: '#16213e', padding: '0 4px',
+          {/* Gridlines sit inside the bar zone only */}
+          <div style={{ position: 'relative', height: BAR_ZONE_PX + LABEL_HEIGHT_PX }}>
+            {ySteps.map(v => (
+              <div key={v} style={{
+                position: 'absolute',
+                left: 0, right: 0,
+                bottom: (v / yMax) * BAR_ZONE_PX,
+                borderTop: `1px solid ${v === 0 ? '#334155' : '#1e293b'}`,
+                zIndex: 0,
+              }} />
+            ))}
+
+            {/* Threshold line */}
+            <div style={{
+              position: 'absolute',
+              left: 0, right: 0,
+              bottom: thresholdPx,
+              borderTop: '2px dashed #f97316',
+              zIndex: 2,
             }}>
-              {threshold}/min threshold
-            </span>
+              <span style={{
+                position: 'absolute', right: 0, top: -14,
+                color: '#f97316', fontSize: 9, fontWeight: 600,
+                background: '#16213e', padding: '0 3px',
+              }}>
+                {threshold}/min
+              </span>
+            </div>
+
+            {/* Bars with value labels — all in pixel heights */}
+            <div style={{
+              position: 'absolute', bottom: 0, left: 0, right: 0,
+              display: 'flex',
+              alignItems: 'flex-end',
+              gap: data.length > 12 ? 2 : 4,
+              height: BAR_ZONE_PX + LABEL_HEIGHT_PX,
+            }}>
+              {data.map((entry, idx) => {
+                const barPx = toPx(entry.rate)
+                const isAbove = entry.rate >= threshold
+                const barColor = isAbove ? '#22c55e' : '#f59e0b'
+
+                return (
+                  <div key={idx} style={{
+                    flex: 1, minWidth: 0,
+                    display: 'flex', flexDirection: 'column',
+                    alignItems: 'center',
+                    height: BAR_ZONE_PX + LABEL_HEIGHT_PX,
+                    justifyContent: 'flex-end',
+                  }}>
+                    {/* Value label — fixed height above bar */}
+                    <span style={{
+                      color: barColor, fontSize: 10, fontWeight: 700,
+                      height: LABEL_HEIGHT_PX, lineHeight: `${LABEL_HEIGHT_PX}px`,
+                      textAlign: 'center', overflow: 'hidden',
+                    }}>
+                      {Math.round(entry.rate)}
+                    </span>
+
+                    {/* Bar — pixel height */}
+                    <div
+                      title={`${formatTime(entry.time)}: ${Math.round(entry.rate)} blinks/min`}
+                      style={{
+                        width: '100%', maxWidth: 36,
+                        height: barPx,
+                        background: barColor,
+                        borderRadius: '4px 4px 0 0',
+                        transition: 'height 0.3s ease',
+                        zIndex: 1,
+                      }}
+                    />
+                  </div>
+                )
+              })}
+            </div>
           </div>
 
-          {/* Bars with labels */}
+          {/* Time labels — separate row below bar area */}
           <div style={{
-            display: 'flex', alignItems: 'flex-end', gap: data.length > 10 ? 2 : 6,
-            height: chartHeight,
+            display: 'flex', gap: data.length > 12 ? 2 : 4,
+            height: TIME_HEIGHT_PX, alignItems: 'center',
           }}>
-            {data.map((entry, idx) => {
-              const heightPct = Math.max(2, (entry.rate / maxRate) * 100)
-              const isAbove = entry.rate >= threshold
-              const barColor = isAbove ? '#22c55e' : '#f59e0b'
-
-              return (
-                <div key={idx} style={{
-                  flex: 1, display: 'flex', flexDirection: 'column',
-                  alignItems: 'center', minWidth: 0,
-                }}>
-                  {/* Value label above bar */}
-                  <span style={{
-                    color: barColor, fontSize: 11, fontWeight: 700,
-                    marginBottom: 2, lineHeight: '1',
-                  }}>
-                    {Math.round(entry.rate)}
-                  </span>
-
-                  {/* Bar */}
-                  <div
-                    title={`${formatTime(entry.time)}: ${Math.round(entry.rate)} blinks/min`}
-                    style={{
-                      width: '100%', maxWidth: 32,
-                      height: `${heightPct}%`,
-                      background: barColor,
-                      borderRadius: '4px 4px 0 0',
-                      minHeight: 4,
-                      transition: 'height 0.3s ease',
-                    }}
-                  />
-
-                  {/* Time label below bar */}
-                  <span style={{
-                    color: '#475569', fontSize: 9, marginTop: 4,
-                    whiteSpace: 'nowrap', lineHeight: '1',
-                  }}>
-                    {formatTime(entry.time)}
-                  </span>
-                </div>
-              )
-            })}
+            {data.map((entry, idx) => (
+              <div key={idx} style={{
+                flex: 1, minWidth: 0,
+                textAlign: 'center',
+                color: '#475569', fontSize: 9,
+                overflow: 'hidden', whiteSpace: 'nowrap',
+              }}>
+                {formatTime(entry.time)}
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
       {/* Legend */}
-      <div style={{ display: 'flex', gap: 16, justifyContent: 'center', marginTop: 4 }}>
+      <div style={{ display: 'flex', gap: 16, justifyContent: 'center' }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#64748b' }}>
           <span style={{ width: 8, height: 8, borderRadius: 2, background: '#22c55e', display: 'inline-block' }} />
           Healthy
@@ -142,10 +182,6 @@ export function BlinkRateChart({ data = [], threshold = DEFAULT_THRESHOLD }: Bli
         <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#64748b' }}>
           <span style={{ width: 8, height: 8, borderRadius: 2, background: '#f59e0b', display: 'inline-block' }} />
           Below threshold
-        </span>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#64748b' }}>
-          <span style={{ width: 8, height: 1, borderTop: '2px dashed #f97316', display: 'inline-block' }} />
-          Target ({threshold}/min)
         </span>
       </div>
     </div>
