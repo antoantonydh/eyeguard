@@ -1,5 +1,7 @@
 # 👁 EyeGuard
 
+**Live app:** [antoantonydh.github.io/eyeguard](https://antoantonydh.github.io/eyeguard/)
+
 A web app that monitors your blink rate via webcam and helps prevent dry eyes and eye fatigue. All processing happens on your device — no data is sent anywhere.
 
 ## Features
@@ -21,6 +23,17 @@ A web app that monitors your blink rate via webcam and helps prevent dry eyes an
 - [Dexie.js](https://dexie.org) — IndexedDB wrapper for local data storage
 - Web Audio API — in-browser sound generation (no audio files)
 - Vitest + React Testing Library
+
+## Deployment
+
+The app is deployed to GitHub Pages automatically on every push to `main` via GitHub Actions. The workflow builds with Vite and deploys to:
+
+**https://antoantonydh.github.io/eyeguard/**
+
+To deploy your own fork:
+1. Fork the repo
+2. Go to Settings → Pages → Source → **GitHub Actions**
+3. Push any commit to `main` — the workflow handles the rest
 
 ## Getting Started
 
