@@ -11,7 +11,7 @@ import type { BlinkRateEntry } from '../components/dashboard/BlinkRateChart'
 import type { Segment } from '../components/dashboard/SessionTimeline'
 
 const RETENTION_DAYS = 7
-const CHART_INTERVAL_MS = 10 * 60 * 1000 // 10-minute buckets
+const MAX_CHART_POINTS = 20 // keep last 20 data points on screen
 
 function todayString(): string {
   return new Date().toISOString().slice(0, 10)
@@ -155,21 +155,35 @@ export function useEyeGuard() {
     })
   }, [detection.totalBlinks, baselineEAR])
 
-  // Chart data: one entry per 10-minute bucket
+  // Chart data: one entry per chartInterval seconds
   const chartDataRef = useRef<BlinkRateEntry[]>([])
-  const lastChartBucketRef = useRef<number>(0)
   const [chartData, setChartData] = useState<BlinkRateEntry[]>([])
+  const blinkRateRef = useRef(0)
+
+  // Keep a fresh reference to blinkRate for the interval callback
+  useEffect(() => {
+    blinkRateRef.current = detection.blinkRate
+  }, [detection.blinkRate])
 
   useEffect(() => {
     if (!detection.isTracking) return
-    const now = Date.now()
-    const bucket = Math.floor(now / CHART_INTERVAL_MS) * CHART_INTERVAL_MS
-    if (bucket === lastChartBucketRef.current) return
-    lastChartBucketRef.current = bucket
-    const entry: BlinkRateEntry = { time: new Date(bucket), rate: detection.blinkRate }
-    chartDataRef.current = [...chartDataRef.current, entry]
-    setChartData(chartDataRef.current)
-  }, [detection.blinkRate, detection.isTracking])
+
+    const intervalMs = settings.chartInterval * 1000
+
+    // Add initial data point immediately
+    const now = new Date()
+    const initial: BlinkRateEntry = { time: now, rate: blinkRateRef.current }
+    chartDataRef.current = [initial]
+    setChartData([initial])
+
+    const interval = setInterval(() => {
+      const entry: BlinkRateEntry = { time: new Date(), rate: blinkRateRef.current }
+      chartDataRef.current = [...chartDataRef.current.slice(-MAX_CHART_POINTS + 1), entry]
+      setChartData([...chartDataRef.current])
+    }, intervalMs)
+
+    return () => clearInterval(interval)
+  }, [detection.isTracking, settings.chartInterval])
 
   // Timeline segments
   const [timelineSegments, setTimelineSegments] = useState<Segment[]>([])

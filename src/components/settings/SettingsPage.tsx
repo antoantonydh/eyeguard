@@ -33,6 +33,11 @@ const SETTING_INFO: Record<string, SettingInfo> = {
     sourceLabel: 'MediaPipe Blink Detection Research',
     sourceUrl: 'https://www.preprints.org/manuscript/202410.0131/v2/download',
   },
+  chartInterval: {
+    text: 'How often a new data point is added to the blink rate chart. Shorter intervals show more detail but the chart fills up faster.',
+    sourceLabel: 'UX best practice',
+    sourceUrl: '',
+  },
   soundEnabled: {
     text: 'Studies show silent health notifications are frequently ignored. Sound improves compliance significantly.',
     sourceLabel: 'Notification UX Research',
@@ -137,7 +142,7 @@ export function SettingsPage() {
   }
 
   function handleNumberChange(
-    field: 'breakInterval' | 'breakDuration' | 'blinkThreshold' | 'stareDelay' | 'cameraFps',
+    field: 'breakInterval' | 'breakDuration' | 'blinkThreshold' | 'stareDelay' | 'cameraFps' | 'chartInterval',
     min: number, max: number,
   ) {
     return (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -215,6 +220,19 @@ export function SettingsPage() {
             value={settings.cameraFps} onChange={handleNumberChange('cameraFps', 15, 30)}
             style={inputStyle} />
           <span style={hintStyle}>Higher = better detection, more CPU (15-30)</span>
+        </div>
+
+        <hr style={dividerStyle} />
+
+        <div style={fieldStyle}>
+          <div style={labelRowStyle}>
+            <label style={labelStyle} htmlFor="chartInterval">Chart Update Interval</label>
+            <InfoTooltip settingKey="chartInterval" />
+          </div>
+          <input id="chartInterval" type="number" min={10} max={300}
+            value={settings.chartInterval} onChange={handleNumberChange('chartInterval', 10, 300)}
+            style={inputStyle} />
+          <span style={hintStyle}>Seconds between chart data points (10-300). Lower = more detail.</span>
         </div>
 
         <hr style={dividerStyle} />
