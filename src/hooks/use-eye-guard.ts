@@ -61,6 +61,40 @@ export function useEyeGuard() {
     }
   }, [detection.facePresence, alerts])
 
+  // Load today's saved stats from IndexedDB on mount
+  const [savedDailyStats, setSavedDailyStats] = useState<{
+    breaksTaken: number
+    breaksSkipped: number
+    stareAlerts: number
+    totalScreenTime: number
+    avgBlinkRate: number
+    score: number
+    totalBlinks: number
+  } | null>(null)
+
+  useEffect(() => {
+    if (settingsLoading) return
+    async function loadToday() {
+      const stats = await dailyStatsRepo.getByDate(todayString())
+      if (!stats) return
+      // Count today's total blinks from blink_events
+      const startOfDay = new Date()
+      startOfDay.setHours(0, 0, 0, 0)
+      const events = await blinkEventRepo.getByTimeRange(startOfDay, new Date())
+      setSavedDailyStats({
+        breaksTaken: stats.breaksTaken,
+        breaksSkipped: stats.breaksSkipped,
+        stareAlerts: stats.stareAlerts,
+        totalScreenTime: stats.totalScreenTime,
+        avgBlinkRate: stats.avgBlinkRate,
+        score: stats.score,
+        totalBlinks: events.length,
+      })
+    }
+    loadToday()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settingsLoading])
+
   // Session lifecycle
   const sessionIdRef = useRef<number | null>(null)
   const sessionStartRef = useRef<Date | null>(null)
@@ -100,12 +134,14 @@ export function useEyeGuard() {
         blinkThreshold: settings.blinkThreshold,
       })
 
+      // Accumulate into today's daily stats (not replace)
+      const existing = await dailyStatsRepo.getByDate(todayString())
       await dailyStatsRepo.upsert(todayString(), {
-        totalScreenTime: sessionMinutes,
-        avgBlinkRate: detection.blinkRate,
-        breaksTaken: alerts.breaksTaken,
-        breaksSkipped: alerts.breaksOffered - alerts.breaksTaken,
-        stareAlerts: detection.stareAlerts,
+        totalScreenTime: (existing?.totalScreenTime ?? 0) + sessionMinutes,
+        avgBlinkRate: detection.blinkRate > 0 ? detection.blinkRate : (existing?.avgBlinkRate ?? 0),
+        breaksTaken: (existing?.breaksTaken ?? 0) + alerts.breaksTaken,
+        breaksSkipped: (existing?.breaksSkipped ?? 0) + (alerts.breaksOffered - alerts.breaksTaken),
+        stareAlerts: (existing?.stareAlerts ?? 0) + detection.stareAlerts,
         score,
       })
     } catch (err) {
@@ -317,5 +353,6 @@ export function useEyeGuard() {
     totalSessionTime,
     baselineEAR,
     reloadSettings,
+    savedDailyStats,
   }
 }

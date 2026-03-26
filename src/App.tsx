@@ -20,7 +20,13 @@ export default function App() {
     chartData,
     timelineSegments,
     reloadSettings,
+    savedDailyStats,
   } = useEyeGuard()
+
+  // Combine saved (historical) data with live session data
+  const totalBlinks = (savedDailyStats?.totalBlinks ?? 0) + detection.totalBlinks
+  const breaksTaken = (savedDailyStats?.breaksTaken ?? 0) + alerts.breaksTaken
+  const breaksOffered = (savedDailyStats?.breaksTaken ?? 0) + (savedDailyStats?.breaksSkipped ?? 0) + alerts.breaksOffered
 
   const wantTrackingRef = useRef(false)
   const hasAutoStarted = useRef(false)
@@ -73,13 +79,13 @@ export default function App() {
       ? Math.round(chartData.reduce((sum, e) => sum + e.rate, 0) / chartData.length)
       : detection.blinkRate
 
-  const score = detection.isTracking
-    ? Math.round(
-        (detection.blinkRate >= settings.blinkThreshold ? 40 : (detection.blinkRate / settings.blinkThreshold) * 40) +
-        (alerts.breaksOffered === 0 ? 40 : (alerts.breaksTaken / alerts.breaksOffered) * 40) +
+  const score = breaksOffered === 0 && !detection.isTracking
+    ? (savedDailyStats?.score ?? 0)
+    : Math.round(
+        (detection.blinkRate >= settings.blinkThreshold ? 40 : detection.blinkRate > 0 ? (detection.blinkRate / settings.blinkThreshold) * 40 : 40) +
+        (breaksOffered === 0 ? 40 : (breaksTaken / breaksOffered) * 40) +
         (detection.stareAlerts < 5 ? 20 : Math.max(0, 20 - detection.stareAlerts)),
       )
-    : 0
 
   return (
     <>
@@ -104,8 +110,8 @@ export default function App() {
                   blinkHistory={chartData}
                   blinkThreshold={settings.blinkThreshold}
                   score={score}
-                  breaksTaken={alerts.breaksTaken}
-                  breaksOffered={alerts.breaksOffered}
+                  breaksTaken={breaksTaken}
+                  breaksOffered={breaksOffered}
                   avgBlinkRate={avgBlinkRate}
                   segments={timelineSegments}
                   cameraActive={camera.status === 'active'}
@@ -115,7 +121,7 @@ export default function App() {
                   stream={camera.stream}
                   isStaring={detection.isStaring}
                   secondsSinceLastBlink={detection.secondsSinceLastBlink}
-                  totalBlinks={detection.totalBlinks}
+                  totalBlinks={totalBlinks}
                   facePresence={detection.facePresence}
                   onCameraPause={() => {
                     wantTrackingRef.current = false
