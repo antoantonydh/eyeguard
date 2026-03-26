@@ -4,13 +4,14 @@ import { BlinkReminder } from './BlinkReminder'
 import { BreakOverlay } from './BreakOverlay'
 import { StareAlert } from './StareAlert'
 
-interface OverlayManagerProps {
+interface Props {
   alert: AlertState | null
+  soundEnabled: boolean
   onStartBreak: () => void
   onSkipBreak: () => void
 }
 
-export function OverlayManager({ alert, onStartBreak, onSkipBreak }: OverlayManagerProps) {
+export function OverlayManager({ alert, soundEnabled, onStartBreak, onSkipBreak }: Props) {
   const [dismissed, setDismissed] = useState<string | null>(null)
 
   const handleDismiss = useCallback(() => {
@@ -18,32 +19,22 @@ export function OverlayManager({ alert, onStartBreak, onSkipBreak }: OverlayMana
   }, [alert?.message])
 
   if (alert === null) return null
-
   if (dismissed === alert.message) return null
 
-  if (alert.type === 'blink') {
-    return (
-      <BlinkReminder
-        message={alert.message}
-        onDismiss={handleDismiss}
-      />
-    )
+  switch (alert.type) {
+    case 'blink':
+      return <BlinkReminder message={alert.message} soundEnabled={soundEnabled} onDismiss={handleDismiss} />
+    case 'break':
+      return (
+        <BreakOverlay
+          message={alert.message}
+          countdown={alert.countdown}
+          soundEnabled={soundEnabled}
+          onStartBreak={onStartBreak}
+          onSkipBreak={onSkipBreak}
+        />
+      )
+    case 'stare':
+      return <StareAlert message={alert.message} soundEnabled={soundEnabled} />
   }
-
-  if (alert.type === 'break') {
-    return (
-      <BreakOverlay
-        message={alert.message}
-        countdown={alert.countdown}
-        onStartBreak={onStartBreak}
-        onSkipBreak={onSkipBreak}
-      />
-    )
-  }
-
-  if (alert.type === 'stare') {
-    return <StareAlert message={alert.message} />
-  }
-
-  return null
 }

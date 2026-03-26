@@ -1,79 +1,59 @@
 import { useEffect, useState } from 'react'
+import { playBlinkSound } from '../../utils/sounds'
 
-interface BlinkReminderProps {
+interface Props {
   message: string
+  soundEnabled: boolean
   onDismiss: () => void
 }
 
-const DISMISS_DELAY_MS = 5000
-
-const styles = {
-  container: {
-    position: 'fixed' as const,
-    bottom: '24px',
-    right: '24px',
-    backgroundColor: '#1e293b',
-    border: '1px solid #334155',
-    borderRadius: '12px',
-    padding: '14px 18px',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
-    zIndex: 9000,
-    maxWidth: '320px',
-    color: '#e2e8f0',
-    fontFamily: 'system-ui, sans-serif',
-    fontSize: '14px',
-  },
-  icon: {
-    fontSize: '22px',
-    flexShrink: 0,
-  },
-  message: {
-    flex: 1,
-    lineHeight: 1.4,
-  },
-  dismissButton: {
-    background: 'none',
-    border: 'none',
-    cursor: 'pointer',
-    color: '#94a3b8',
-    fontSize: '18px',
-    padding: '0 2px',
-    lineHeight: 1,
-    flexShrink: 0,
-  },
-}
-
-export function BlinkReminder({ message, onDismiss }: BlinkReminderProps) {
+export function BlinkReminder({ message, soundEnabled, onDismiss }: Props) {
   const [visible, setVisible] = useState(true)
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setVisible(false)
-      onDismiss()
-    }, DISMISS_DELAY_MS)
+    if (soundEnabled) playBlinkSound()
+  }, [soundEnabled])
 
+  useEffect(() => {
+    const timer = setTimeout(() => { setVisible(false); onDismiss() }, 8000)
     return () => clearTimeout(timer)
   }, [onDismiss])
 
   if (!visible) return null
 
   return (
-    <div style={styles.container} role="status" aria-live="polite">
-      <span style={styles.icon} aria-hidden="true">👁️</span>
-      <span style={styles.message}>{message}</span>
+    <div style={{
+      position: 'fixed', bottom: 32, right: 32,
+      background: 'linear-gradient(135deg, #1a2744, #1e3a5f)',
+      border: '1px solid rgba(79, 195, 247, 0.4)',
+      borderRadius: 16, padding: '20px 28px',
+      display: 'flex', alignItems: 'center', gap: 16,
+      boxShadow: '0 8px 40px rgba(0,0,0,0.5), 0 0 20px rgba(79,195,247,0.1)',
+      zIndex: 9999, maxWidth: 400, minWidth: 320,
+      animation: 'slideInRight 0.3s ease-out',
+    }} role="status" aria-live="polite">
+      <div style={{
+        width: 48, height: 48, borderRadius: '50%',
+        background: 'rgba(79, 195, 247, 0.15)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 24, flexShrink: 0,
+      }}>👁️</div>
+      <div style={{ flex: 1 }}>
+        <div style={{ color: '#e2e8f0', fontSize: 16, fontWeight: 700, marginBottom: 4 }}>
+          Remember to Blink
+        </div>
+        <div style={{ color: '#94a3b8', fontSize: 14, lineHeight: 1.4 }}>
+          {message}
+        </div>
+      </div>
       <button
-        style={styles.dismissButton}
-        onClick={() => {
-          setVisible(false)
-          onDismiss()
+        onClick={() => { setVisible(false); onDismiss() }}
+        style={{
+          background: 'rgba(255,255,255,0.05)', border: '1px solid #334',
+          color: '#94a3b8', fontSize: 14, padding: '6px 10px', borderRadius: 8,
+          cursor: 'pointer', flexShrink: 0,
         }}
-        aria-label="Dismiss blink reminder"
-      >
-        ×
-      </button>
+      >✕</button>
     </div>
   )
 }

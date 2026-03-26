@@ -137,6 +137,7 @@ export default function App() {
 
         <OverlayManager
           alert={alerts.alert}
+          soundEnabled={settings.soundEnabled}
           onStartBreak={alerts.startBreak}
           onSkipBreak={alerts.skipBreak}
         />

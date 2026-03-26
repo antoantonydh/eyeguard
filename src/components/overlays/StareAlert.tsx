@@ -1,50 +1,54 @@
-const styles = {
-  container: {
-    position: 'fixed' as const,
-    bottom: '24px',
-    left: '50%',
-    transform: 'translateX(-50%)',
-    backgroundColor: '#1c1200',
-    border: '1px solid #d97706',
-    borderRadius: '999px',
-    padding: '10px 20px',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-    boxShadow: '0 4px 24px rgba(0,0,0,0.5)',
-    zIndex: 9000,
-    color: '#fde68a',
-    fontFamily: 'system-ui, sans-serif',
-    fontSize: '14px',
-    whiteSpace: 'nowrap' as const,
-  },
-  dot: {
-    width: '10px',
-    height: '10px',
-    borderRadius: '50%',
-    backgroundColor: '#f59e0b',
-    flexShrink: 0,
-    animation: 'eyeguard-pulse 1s ease-in-out infinite',
-  },
-  message: {
-    color: '#fde68a',
-  },
+import { useEffect } from 'react'
+import { playStareSound } from '../../utils/sounds'
+
+interface Props {
+  message: string
+  soundEnabled: boolean
 }
 
-const pulseKeyframes = `
-  @keyframes eyeguard-pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.4; transform: scale(0.8); }
-  }
-`
+export function StareAlert({ message, soundEnabled }: Props) {
+  useEffect(() => {
+    if (soundEnabled) playStareSound()
+  }, [soundEnabled])
 
-export function StareAlert({ message }: { message: string }) {
   return (
     <>
-      <style>{pulseKeyframes}</style>
-      <div style={styles.container} role="alert" aria-live="assertive">
-        <div style={styles.dot} aria-hidden="true" />
-        <span style={styles.message}>{message}</span>
+      <style>{`
+        @keyframes eyeguard-pulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.5; transform: scale(0.85); }
+        }
+        @keyframes eyeguard-glow {
+          0%, 100% { box-shadow: 0 0 20px rgba(255,152,0,0.3); }
+          50% { box-shadow: 0 0 40px rgba(255,152,0,0.6); }
+        }
+      `}</style>
+      <div style={{
+        position: 'fixed', bottom: 32, left: '50%', transform: 'translateX(-50%)',
+        background: 'linear-gradient(135deg, #3e2200, #4a2800)',
+        border: '2px solid rgba(255, 152, 0, 0.6)',
+        borderRadius: 16, padding: '18px 28px',
+        display: 'flex', alignItems: 'center', gap: 14,
+        zIndex: 9999, minWidth: 320,
+        animation: 'slideUp 0.4s ease-out, shake 0.5s ease-in-out 0.4s, eyeguard-glow 1.5s ease-in-out 0.9s infinite',
+      }} role="alert" aria-live="assertive">
+        <div style={{
+          width: 14, height: 14, borderRadius: '50%',
+          background: '#ff9800', flexShrink: 0,
+          boxShadow: '0 0 12px #ff9800',
+          animation: 'eyeguard-pulse 1s ease-in-out infinite',
+        }} />
+        <div style={{ flex: 1 }}>
+          <div style={{ color: '#ffcc80', fontSize: 16, fontWeight: 700 }}>
+            Blink Now
+          </div>
+          <div style={{ color: '#c8956a', fontSize: 14, marginTop: 2 }}>
+            {message}
+          </div>
+        </div>
+        <div style={{
+          color: '#ff9800', fontSize: 24, fontWeight: 700, fontFamily: 'monospace',
+        }}>!</div>
       </div>
     </>
   )

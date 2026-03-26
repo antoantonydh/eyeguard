@@ -1,89 +1,71 @@
-interface BreakOverlayProps {
+import { useEffect } from 'react'
+import { playBreakSound } from '../../utils/sounds'
+
+interface Props {
   message: string
   countdown?: number
+  soundEnabled: boolean
   onStartBreak: () => void
   onSkipBreak: () => void
 }
 
-const styles = {
-  container: {
-    position: 'fixed' as const,
-    top: '24px',
-    left: '50%',
-    transform: 'translateX(-50%)',
-    backgroundColor: '#0f2918',
-    border: '1px solid #16a34a',
-    borderRadius: '999px',
-    padding: '12px 24px',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '14px',
-    boxShadow: '0 4px 24px rgba(0,0,0,0.5)',
-    zIndex: 9000,
-    color: '#bbf7d0',
-    fontFamily: 'system-ui, sans-serif',
-    fontSize: '14px',
-    whiteSpace: 'nowrap' as const,
-  },
-  icon: {
-    fontSize: '18px',
-    flexShrink: 0,
-  },
-  message: {
-    flex: 1,
-    color: '#86efac',
-  },
-  countdown: {
-    backgroundColor: '#166534',
-    borderRadius: '50%',
-    width: '36px',
-    height: '36px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: '13px',
-    fontWeight: 700,
-    color: '#bbf7d0',
-    flexShrink: 0,
-  },
-  startButton: {
-    backgroundColor: '#16a34a',
-    border: 'none',
-    borderRadius: '999px',
-    padding: '6px 14px',
-    cursor: 'pointer',
-    color: '#fff',
-    fontSize: '13px',
-    fontWeight: 600,
-  },
-  skipButton: {
-    background: 'none',
-    border: '1px solid #166534',
-    borderRadius: '999px',
-    padding: '6px 12px',
-    cursor: 'pointer',
-    color: '#86efac',
-    fontSize: '13px',
-  },
-}
+export function BreakOverlay({ message, countdown, soundEnabled, onStartBreak, onSkipBreak }: Props) {
+  useEffect(() => {
+    if (soundEnabled) playBreakSound()
+  }, [soundEnabled])
 
-export function BreakOverlay({ message, countdown, onStartBreak, onSkipBreak }: BreakOverlayProps) {
   return (
-    <div style={styles.container} role="alertdialog" aria-label="Break reminder">
-      <span style={styles.icon} aria-hidden="true">🌿</span>
-      <span style={styles.message}>{message}</span>
-      {countdown !== undefined ? (
-        <div style={styles.countdown} aria-label={`${countdown} seconds remaining`}>
-          {countdown}s
+    <div style={{
+      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+      background: 'rgba(0, 0, 0, 0.6)', backdropFilter: 'blur(4px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      zIndex: 9999, animation: 'fadeIn 0.3s ease-out',
+    }} role="alertdialog" aria-label="Break reminder">
+      <div style={{
+        background: 'linear-gradient(135deg, #0d3320, #1a4a30)',
+        border: '1px solid rgba(76, 175, 80, 0.3)',
+        borderRadius: 24, padding: '40px 48px',
+        textAlign: 'center', maxWidth: 420,
+        boxShadow: '0 16px 64px rgba(0,0,0,0.5), 0 0 40px rgba(76,175,80,0.1)',
+        animation: 'bounceIn 0.5s ease-out',
+      }}>
+        <div style={{ fontSize: 48, marginBottom: 16 }}>🌿</div>
+        <div style={{
+          color: '#a5d6a7', fontSize: 12, textTransform: 'uppercase',
+          letterSpacing: 2, marginBottom: 8, fontWeight: 600,
+        }}>20-20-20 Break</div>
+        <div style={{
+          color: '#fff', fontSize: 24, fontWeight: 700, marginBottom: 8,
+        }}>
+          {countdown != null ? 'Look away from your screen' : message}
         </div>
-      ) : (
-        <button style={styles.startButton} onClick={onStartBreak}>
-          Start break
-        </button>
-      )}
-      <button style={styles.skipButton} onClick={onSkipBreak} aria-label="Skip break">
-        Skip
-      </button>
+        <div style={{ color: '#81c784', fontSize: 15, marginBottom: 24, lineHeight: 1.5 }}>
+          Focus on something 20 feet away to relax your eye muscles
+        </div>
+
+        {countdown != null ? (
+          <div style={{ marginBottom: 24 }}>
+            <div style={{
+              width: 80, height: 80, border: '4px solid #66bb6a', borderRadius: '50%',
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              color: '#66bb6a', fontSize: 32, fontWeight: 700,
+            }}>{countdown}</div>
+            <div style={{ color: '#888', fontSize: 13, marginTop: 8 }}>seconds remaining</div>
+          </div>
+        ) : (
+          <button onClick={onStartBreak} style={{
+            background: '#4caf50', color: '#fff', border: 'none',
+            padding: '14px 36px', borderRadius: 12, fontSize: 16, fontWeight: 700,
+            cursor: 'pointer', marginBottom: 16, display: 'block', width: '100%',
+          }}>Start Break</button>
+        )}
+
+        <button onClick={onSkipBreak} style={{
+          background: 'none', border: '1px solid rgba(255,255,255,0.15)',
+          color: '#888', padding: '10px 24px', borderRadius: 10, fontSize: 13,
+          cursor: 'pointer', width: '100%',
+        }}>Skip this time</button>
+      </div>
     </div>
   )
 }
