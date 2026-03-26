@@ -1,70 +1,96 @@
-import { useState } from 'react'
 import { useSettings } from '../../hooks/use-settings'
 import { userProfileRepo } from '../../storage/user-profile-repository'
 
-const SETTING_INFO: Record<string, { title: string; description: string; source: string }> = {
+interface SettingInfo {
+  text: string
+  sourceLabel: string
+  sourceUrl: string
+}
+
+const SETTING_INFO: Record<string, SettingInfo> = {
   breakInterval: {
-    title: 'Break Interval (20-20-20 Rule)',
-    description: 'The American Optometric Association and American Academy of Ophthalmology recommend looking away from your screen every 20 minutes. This interval has the strongest institutional backing among all tested durations.',
-    source: 'American Optometric Association (AOA), American Academy of Ophthalmology (AAO)',
+    text: 'AOA & AAO recommend every 20 min. The strongest evidence-backed interval for reducing digital eye strain.',
+    sourceLabel: 'American Academy of Ophthalmology',
+    sourceUrl: 'https://www.aao.org/eye-health/tips-prevention/computer-usage',
   },
   breakDuration: {
-    title: 'Break Duration',
-    description: 'Research from SUNY College of Optometry (2023) found that 20-second breaks are ineffective at reducing digital eye strain. Breaks need to be at least 60-120 seconds to allow your eye muscles to fully relax and your tear film to recover.',
-    source: 'Rosenfield et al., Ophthalmic & Physiological Optics, 2023',
+    text: '20-second breaks are ineffective (SUNY, 2023). 60-120 seconds needed for eye muscles and tear film to recover.',
+    sourceLabel: 'Rosenfield et al., 2023',
+    sourceUrl: 'https://pubmed.ncbi.nlm.nih.gov/35963776/',
   },
   blinkThreshold: {
-    title: 'Blink Rate Threshold',
-    description: 'The healthy resting blink rate averages about 14 blinks/minute (range 8-21). During screen use, it drops to just 4-6 blinks/minute — a 60% reduction. You need at least 12 blinks per minute to keep your tear film stable and prevent dry eyes. That means in any 60-second window, you should blink at least 12 times.',
-    source: 'Scientific Reports, 2025; Contact Lens and Anterior Eye, 2025',
+    text: 'Healthy average: ~14 blinks/min. Screen use drops it to 4-6/min. Below 12/min your tear film destabilizes.',
+    sourceLabel: 'Scientific Reports, 2025',
+    sourceUrl: 'https://www.nature.com/articles/s41598-025-26424-z',
   },
   stareDelay: {
-    title: 'Stare Alert Delay',
-    description: 'The average time between natural blinks is about 6 seconds. Going 10+ seconds without blinking puts your tear film at risk of breaking up, which leads to dry, irritated eyes. Clinical studies show tear film breakup begins around 10 seconds in people with healthy eyes, and even sooner for those with dry eye.',
-    source: 'Scientific Reports, 2018; Investigative Ophthalmology & Visual Science',
+    text: 'Normal interblink: ~6 sec. Tear film starts breaking down at ~10 sec. Alert fires before damage occurs.',
+    sourceLabel: 'Scientific Reports, 2018',
+    sourceUrl: 'https://www.nature.com/articles/s41598-018-31814-7',
   },
   cameraFps: {
-    title: 'Camera Frame Rate',
-    description: 'A natural blink lasts only 100-400 milliseconds. At 15 FPS, each frame is 67ms — a fast 100ms blink only appears in 1-2 frames, which is too few for reliable detection. At 24 FPS (42ms/frame), even fast blinks span 3+ frames, making detection reliable. Higher FPS uses more CPU.',
-    source: 'MediaPipe benchmarks; Eye Blink Detection research, 2024',
+    text: 'A blink lasts 100-400ms. At 24 FPS (42ms/frame) even fast blinks span 3+ frames for reliable detection.',
+    sourceLabel: 'MediaPipe Blink Detection Research',
+    sourceUrl: 'https://www.preprints.org/manuscript/202410.0131/v2/download',
   },
   soundEnabled: {
-    title: 'Sound Alerts',
-    description: 'Studies on health reminder apps show that silent notifications are frequently ignored. Sound alerts significantly improve compliance with break and blink reminders. A soft chime is recommended — you can always mute when in meetings.',
-    source: 'UX research on medication and health reminder compliance',
+    text: 'Studies show silent health notifications are frequently ignored. Sound improves compliance significantly.',
+    sourceLabel: 'Notification UX Research',
+    sourceUrl: 'https://www.smashingmagazine.com/2025/07/design-guidelines-better-notifications-ux/',
   },
 }
 
-function InfoButton({ settingKey }: { settingKey: string }) {
-  const [open, setOpen] = useState(false)
+function InfoTooltip({ settingKey }: { settingKey: string }) {
   const info = SETTING_INFO[settingKey]
   if (!info) return null
 
+  const tooltipId = `tooltip-${settingKey}`
+
   return (
-    <>
-      <button
-        onClick={() => setOpen(v => !v)}
+    <span className="info-tooltip-wrap" style={{ position: 'relative', display: 'inline-flex', marginLeft: 8 }}>
+      <span
+        className={`info-trigger-${tooltipId}`}
         style={{
           background: 'none', border: '1px solid #334', borderRadius: '50%',
-          width: 20, height: 20, color: '#4fc3f7', fontSize: 11, fontWeight: 700,
-          cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-          marginLeft: 8, flexShrink: 0,
+          width: 18, height: 18, color: '#4fc3f7', fontSize: 10, fontWeight: 700,
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'help', flexShrink: 0,
         }}
-        title={`Learn more about ${info.title}`}
       >
         i
-      </button>
-      {open && (
-        <div style={{
+      </span>
+      <span
+        className={`info-popup-${tooltipId}`}
+        style={{
+          position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)',
           background: '#0d1520', border: '1px solid #1e2d4d', borderRadius: 8,
-          padding: '12px 16px', marginTop: 8, fontSize: 13, lineHeight: 1.6,
-        }}>
-          <div style={{ color: '#e8f4fd', fontWeight: 600, marginBottom: 6 }}>{info.title}</div>
-          <p style={{ color: '#94a3b8', margin: '0 0 8px' }}>{info.description}</p>
-          <p style={{ color: '#4fc3f7', fontSize: 11, margin: 0 }}>Source: {info.source}</p>
-        </div>
-      )}
-    </>
+          padding: '10px 14px', fontSize: 12, lineHeight: 1.5, color: '#94a3b8',
+          width: 300, marginBottom: 8, pointerEvents: 'none',
+          opacity: 0, transition: 'opacity 0.15s', zIndex: 100,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+        }}
+      >
+        {info.text}
+        <a
+          href={info.sourceUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            display: 'block', marginTop: 6, color: '#4fc3f7', fontSize: 11,
+            textDecoration: 'underline',
+          }}
+        >
+          Source: {info.sourceLabel}
+        </a>
+      </span>
+      <style>{`
+        .info-trigger-${tooltipId}:hover + .info-popup-${tooltipId},
+        .info-popup-${tooltipId}:hover {
+          opacity: 1 !important;
+          pointer-events: auto !important;
+        }
+      `}</style>
+    </span>
   )
 }
 
@@ -129,12 +155,12 @@ export function SettingsPage() {
         <div style={fieldStyle}>
           <div style={labelRowStyle}>
             <label style={labelStyle} htmlFor="breakInterval">Break Interval</label>
-            <InfoButton settingKey="breakInterval" />
+            <InfoTooltip settingKey="breakInterval" />
           </div>
           <input id="breakInterval" type="number" min={10} max={60}
             value={settings.breakInterval} onChange={handleNumberChange('breakInterval', 10, 60)}
             style={inputStyle} />
-          <span style={hintStyle}>How often to remind you to look away (10-60 min)</span>
+          <span style={hintStyle}>Minutes between break reminders (10-60)</span>
         </div>
 
         <hr style={dividerStyle} />
@@ -142,12 +168,12 @@ export function SettingsPage() {
         <div style={fieldStyle}>
           <div style={labelRowStyle}>
             <label style={labelStyle} htmlFor="breakDuration">Break Duration</label>
-            <InfoButton settingKey="breakDuration" />
+            <InfoTooltip settingKey="breakDuration" />
           </div>
           <input id="breakDuration" type="number" min={20} max={120}
             value={settings.breakDuration} onChange={handleNumberChange('breakDuration', 20, 120)}
             style={inputStyle} />
-          <span style={hintStyle}>How long each break lasts (20-120 sec). Research recommends 60+ seconds for effective eye relaxation.</span>
+          <span style={hintStyle}>Seconds per break (20-120). 60+ sec recommended.</span>
         </div>
 
         <hr style={dividerStyle} />
@@ -155,13 +181,13 @@ export function SettingsPage() {
         <div style={fieldStyle}>
           <div style={labelRowStyle}>
             <label style={labelStyle} htmlFor="blinkThreshold">Blink Rate Alert</label>
-            <InfoButton settingKey="blinkThreshold" />
+            <InfoTooltip settingKey="blinkThreshold" />
           </div>
           <input id="blinkThreshold" type="number" min={8} max={20}
             value={settings.blinkThreshold} onChange={handleNumberChange('blinkThreshold', 8, 20)}
             style={inputStyle} />
           <span style={hintStyle}>
-            Alert when blinks drop below this rate (8-20/min). You need at least {settings.blinkThreshold} blinks every 60 seconds to keep your eyes moist.
+            Alert below this rate. Need {settings.blinkThreshold}+ blinks per 60 sec.
           </span>
         </div>
 
@@ -170,29 +196,25 @@ export function SettingsPage() {
         <div style={fieldStyle}>
           <div style={labelRowStyle}>
             <label style={labelStyle} htmlFor="stareDelay">Stare Alert Delay</label>
-            <InfoButton settingKey="stareDelay" />
+            <InfoTooltip settingKey="stareDelay" />
           </div>
           <input id="stareDelay" type="number" min={5} max={15}
             value={settings.stareDelay} onChange={handleNumberChange('stareDelay', 5, 15)}
             style={inputStyle} />
-          <span style={hintStyle}>
-            Alert after this many seconds without blinking (5-15 sec). Normal blink interval is ~6 seconds — tear film starts breaking down after ~10 seconds.
-          </span>
+          <span style={hintStyle}>Seconds without blinking before alert (5-15)</span>
         </div>
 
         <hr style={dividerStyle} />
 
         <div style={fieldStyle}>
           <div style={labelRowStyle}>
-            <label style={labelStyle} htmlFor="cameraFps">Camera Frame Rate</label>
-            <InfoButton settingKey="cameraFps" />
+            <label style={labelStyle} htmlFor="cameraFps">Camera FPS</label>
+            <InfoTooltip settingKey="cameraFps" />
           </div>
           <input id="cameraFps" type="number" min={15} max={30}
             value={settings.cameraFps} onChange={handleNumberChange('cameraFps', 15, 30)}
             style={inputStyle} />
-          <span style={hintStyle}>
-            Higher = more accurate blink detection, but uses more CPU (15-30 FPS). 24 FPS recommended for reliable detection.
-          </span>
+          <span style={hintStyle}>Higher = better detection, more CPU (15-30)</span>
         </div>
 
         <hr style={dividerStyle} />
@@ -204,11 +226,11 @@ export function SettingsPage() {
           <label htmlFor="soundEnabled" style={{ color: '#b0bec5', fontSize: 14, cursor: 'pointer' }}>
             Enable sound alerts
           </label>
-          <InfoButton settingKey="soundEnabled" />
+          <InfoTooltip settingKey="soundEnabled" />
         </div>
 
-        <p style={{ color: '#4fc3f7', fontSize: 12, fontWeight: 500, marginTop: 8, textAlign: 'center' }}>
-          Changes are saved automatically
+        <p style={{ color: '#4fc3f7', fontSize: 12, fontWeight: 500, textAlign: 'center' }}>
+          Changes saved automatically
         </p>
       </div>
 
@@ -216,12 +238,11 @@ export function SettingsPage() {
         <div style={fieldStyle}>
           <label style={{ ...labelStyle, color: '#f44336' }}>Danger Zone</label>
           <p style={{ color: '#78909c', fontSize: 13, lineHeight: 1.5 }}>
-            Reset all data and start from scratch. This will clear your calibration,
-            sessions, history, and settings.
+            Clear all data and restart onboarding from scratch.
           </p>
           <button
             onClick={async () => {
-              if (window.confirm('Are you sure? This will delete all your EyeGuard data and restart onboarding.')) {
+              if (window.confirm('Delete all EyeGuard data and restart?')) {
                 await userProfileRepo.resetAll()
                 window.location.reload()
               }

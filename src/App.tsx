@@ -21,44 +21,40 @@ export default function App() {
     timelineSegments,
   } = useEyeGuard()
 
+  const wantTrackingRef = useRef(false)
   const hasAutoStarted = useRef(false)
 
-  // Auto-start camera and detection after onboarding completes
+  // Auto-start after onboarding
   useEffect(() => {
     if (!isCalibrated || hasAutoStarted.current) return
     hasAutoStarted.current = true
-    camera.start().then(() => {
+    wantTrackingRef.current = true
+    camera.start()
+  }, [isCalibrated, camera])
+
+  // React to stream becoming available — start detection when stream is ready and user wants tracking
+  useEffect(() => {
+    if (wantTrackingRef.current && camera.stream && !detection.isTracking) {
       detection.startTracking()
-    }).catch(() => {
-      // Camera start failure is handled inside useCamera (sets status to 'denied'/'error')
-    })
-  }, [isCalibrated, camera, detection])
+    }
+  }, [camera.stream, detection])
 
   const handleToggleTracking = () => {
     if (detection.isTracking) {
+      wantTrackingRef.current = false
       detection.stopTracking()
       camera.stop()
     } else {
-      camera.start().then(() => {
-        detection.startTracking()
-      }).catch(() => {})
+      wantTrackingRef.current = true
+      camera.start()
     }
   }
 
   if (!isCalibrated) {
     return (
       <>
-        {/* Hidden video element required for calibration inside OnboardingFlow */}
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          muted
-          style={{ display: 'none' }}
-        />
+        <video ref={videoRef} autoPlay playsInline muted style={{ display: 'none' }} />
         <OnboardingFlow onComplete={() => {
-          // isCalibrated will flip to true after profile is saved;
-          // the useEffect above will trigger auto-start.
           hasAutoStarted.current = false
         }} />
       </>
@@ -80,14 +76,7 @@ export default function App() {
 
   return (
     <>
-      {/* Hidden video element used by the detection engine */}
-      <video
-        ref={videoRef}
-        autoPlay
-        playsInline
-        muted
-        style={{ display: 'none' }}
-      />
+      <video ref={videoRef} autoPlay playsInline muted style={{ display: 'none' }} />
 
       <BrowserRouter>
         <Routes>
@@ -116,15 +105,16 @@ export default function App() {
                   cameraConfidence={detection.confidence}
                   wearsGlasses={profile?.wearsGlasses ?? false}
                   cameraFps={settings.cameraFps}
-                  onCameraPause={() => {
-                    detection.stopTracking()
-                    camera.stop()
-                  }}
                   stream={camera.stream}
                   isStaring={detection.isStaring}
                   secondsSinceLastBlink={detection.secondsSinceLastBlink}
                   totalBlinks={detection.totalBlinks}
                   isTracking={detection.isTracking}
+                  onCameraPause={() => {
+                    wantTrackingRef.current = false
+                    detection.stopTracking()
+                    camera.stop()
+                  }}
                   onRecalibrate={() => {
                     detection.stopTracking()
                     camera.stop()
