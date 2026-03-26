@@ -172,25 +172,40 @@ export function useEyeGuard() {
   const blinkRateRef = useRef(0)
 
   // Keep a fresh reference to blinkRate for the interval callback
+  // Also update chart immediately when blinkRate first becomes non-zero
+  const hasFirstDataPointRef = useRef(false)
   useEffect(() => {
     blinkRateRef.current = detection.blinkRate
-  }, [detection.blinkRate])
+
+    // Add first data point as soon as we get a real reading
+    if (detection.blinkRate > 0 && !hasFirstDataPointRef.current && detection.isTracking) {
+      hasFirstDataPointRef.current = true
+      const entry: BlinkRateEntry = { time: new Date(), rate: detection.blinkRate }
+      chartDataRef.current = [entry]
+      setChartData([entry])
+    }
+    if (!detection.isTracking) {
+      hasFirstDataPointRef.current = false
+    }
+  }, [detection.blinkRate, detection.isTracking])
 
   useEffect(() => {
     if (!detection.isTracking) return
 
     const intervalMs = settings.chartInterval * 1000
 
-    // Add initial data point immediately
-    const now = new Date()
-    const initial: BlinkRateEntry = { time: now, rate: blinkRateRef.current }
-    chartDataRef.current = [initial]
-    setChartData([initial])
+    // Reset chart on tracking start
+    chartDataRef.current = []
+    setChartData([])
 
     const interval = setInterval(() => {
-      const entry: BlinkRateEntry = { time: new Date(), rate: blinkRateRef.current }
-      chartDataRef.current = [...chartDataRef.current.slice(-MAX_CHART_POINTS + 1), entry]
-      setChartData([...chartDataRef.current])
+      const rate = blinkRateRef.current
+      // Only record when face is present and we have actual data
+      if (rate > 0) {
+        const entry: BlinkRateEntry = { time: new Date(), rate }
+        chartDataRef.current = [...chartDataRef.current.slice(-MAX_CHART_POINTS + 1), entry]
+        setChartData([...chartDataRef.current])
+      }
     }, intervalMs)
 
     return () => clearInterval(interval)
