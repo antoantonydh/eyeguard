@@ -35,7 +35,7 @@ export function useEyeGuard() {
   }, [camera.stream, videoRef])
 
   const detection = useDetection(
-    videoRef.current,
+    videoRef,
     camera.stream,
     settings,
     baselineEAR,

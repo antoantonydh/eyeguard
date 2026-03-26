@@ -5,6 +5,7 @@ import { DailyScore } from './DailyScore'
 import { SessionTimeline } from './SessionTimeline'
 import type { Segment } from './SessionTimeline'
 import { CameraStatusBar } from './CameraStatusBar'
+import { DebugPanel } from './DebugPanel'
 
 interface DashboardPageProps {
   blinkRate?: number
@@ -20,6 +21,11 @@ interface DashboardPageProps {
   cameraConfidence?: number
   wearsGlasses?: boolean
   cameraFps?: number
+  stream?: MediaStream | null
+  isStaring?: boolean
+  secondsSinceLastBlink?: number
+  totalBlinks?: number
+  isTracking?: boolean
   onCameraPause?: () => void
   onRecalibrate?: () => void
 }
@@ -53,6 +59,11 @@ export function DashboardPage({
   cameraConfidence = 0,
   wearsGlasses = false,
   cameraFps = 0,
+  stream = null,
+  isStaring = false,
+  secondsSinceLastBlink = 0,
+  totalBlinks = 0,
+  isTracking = false,
   onCameraPause,
   onRecalibrate,
 }: DashboardPageProps) {
@@ -79,6 +90,16 @@ export function DashboardPage({
         fps={cameraFps}
         onPause={onCameraPause}
         onRecalibrate={onRecalibrate}
+      />
+
+      <DebugPanel
+        stream={stream}
+        blinkRate={blinkRate}
+        confidence={cameraConfidence}
+        isStaring={isStaring}
+        secondsSinceLastBlink={secondsSinceLastBlink}
+        totalBlinks={totalBlinks}
+        isTracking={isTracking}
       />
     </div>
   )

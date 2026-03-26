@@ -120,10 +120,14 @@ export default function App() {
                     detection.stopTracking()
                     camera.stop()
                   }}
+                  stream={camera.stream}
+                  isStaring={detection.isStaring}
+                  secondsSinceLastBlink={detection.secondsSinceLastBlink}
+                  totalBlinks={detection.totalBlinks}
+                  isTracking={detection.isTracking}
                   onRecalibrate={() => {
                     detection.stopTracking()
                     camera.stop()
-                    // Navigate to root to restart onboarding — profile cleared externally
                     window.location.reload()
                   }}
                 />

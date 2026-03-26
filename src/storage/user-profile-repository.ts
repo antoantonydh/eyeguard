@@ -35,4 +35,11 @@ export const userProfileRepo = {
     const profile = await db.userProfile.get(1)
     return profile != null && profile.baselineEAR > 0
   },
+
+  async resetAll(): Promise<void> {
+    await db.userProfile.clear()
+    await db.sessions.clear()
+    await db.blinkEvents.clear()
+    await db.dailyStats.clear()
+  },
 }

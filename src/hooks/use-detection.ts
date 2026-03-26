@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, type RefObject } from 'react'
 import { FaceTracker } from '../detection/face-tracker'
 import { BlinkDetector } from '../detection/blink-detector'
 import type { Settings } from '../types'
@@ -14,7 +14,7 @@ interface DetectionState {
 }
 
 export function useDetection(
-  videoElement: HTMLVideoElement | null,
+  videoRef: RefObject<HTMLVideoElement | null>,
   stream: MediaStream | null,
   settings: Settings,
   baselineEAR: number,
@@ -32,12 +32,29 @@ export function useDetection(
   const wasStaringRef = useRef(false)
 
   const startTracking = useCallback(async () => {
+    const videoElement = videoRef.current
     if (!videoElement || !stream) return
+
+    // Ensure video is playing with the stream
+    if (videoElement.srcObject !== stream) {
+      videoElement.srcObject = stream
+    }
+    await videoElement.play().catch(() => {})
+
+    // Wait for video to be ready
+    if (videoElement.readyState < 2) {
+      await new Promise<void>((resolve) => {
+        videoElement.addEventListener('loadeddata', () => resolve(), { once: true })
+      })
+    }
+
     const tracker = new FaceTracker()
     await tracker.initialize()
     trackerRef.current = tracker
+
     const detector = new BlinkDetector({ earThreshold: baselineEAR })
     detectorRef.current = detector
+
     const fpsInterval = 1000 / settings.cameraFps
 
     const processFrame = (timestamp: number) => {
@@ -46,6 +63,7 @@ export function useDetection(
         return
       }
       lastFrameRef.current = timestamp
+
       const result = tracker.processFrame(videoElement, timestamp)
       if (result && result.confidence > 0) {
         detector.processEAR(result.averageEar)
@@ -61,18 +79,17 @@ export function useDetection(
       }
       rafRef.current = requestAnimationFrame(processFrame)
     }
+
+    setState(prev => ({ ...prev, isTracking: true }))
     rafRef.current = requestAnimationFrame(processFrame)
-  }, [videoElement, stream, settings.cameraFps, settings.stareDelay, baselineEAR])
+  }, [videoRef, stream, settings.cameraFps, settings.stareDelay, baselineEAR])
 
   const stopTracking = useCallback(() => {
     cancelAnimationFrame(rafRef.current)
     trackerRef.current?.destroy()
+    trackerRef.current = null
     detectorRef.current?.reset()
     setState(prev => ({ ...prev, isTracking: false }))
-  }, [])
-
-  useEffect(() => {
-    return () => { cancelAnimationFrame(rafRef.current); trackerRef.current?.destroy() }
   }, [])
 
   return { ...state, startTracking, stopTracking }

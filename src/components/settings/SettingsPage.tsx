@@ -1,4 +1,5 @@
 import { useSettings } from '../../hooks/use-settings'
+import { userProfileRepo } from '../../storage/user-profile-repository'
 
 const pageStyle: React.CSSProperties = {
   padding: '32px 24px',
@@ -200,6 +201,31 @@ export function SettingsPage() {
         </div>
 
         <p style={savedBadgeStyle}>Changes are saved automatically</p>
+      </div>
+
+      <div style={{ ...cardStyle, marginTop: 24, background: '#1a1520' }}>
+        <div style={fieldStyle}>
+          <label style={{ ...labelStyle, color: '#f44336' }}>Danger Zone</label>
+          <p style={{ color: '#78909c', fontSize: 13, lineHeight: 1.5 }}>
+            Reset all data and start from scratch. This will clear your calibration,
+            sessions, history, and settings.
+          </p>
+          <button
+            onClick={async () => {
+              if (window.confirm('Are you sure? This will delete all your EyeGuard data and restart onboarding.')) {
+                await userProfileRepo.resetAll()
+                window.location.reload()
+              }
+            }}
+            style={{
+              background: '#f4433620', border: '1px solid #f44336', color: '#f44336',
+              padding: '10px 20px', borderRadius: 8, fontSize: 14, fontWeight: 600,
+              cursor: 'pointer', marginTop: 8,
+            }}
+          >
+            Reset Everything
+          </button>
+        </div>
       </div>
     </div>
   )
