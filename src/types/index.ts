@@ -52,6 +52,6 @@ export const DEFAULT_SETTINGS: Settings = {
   blinkThreshold: 12,
   stareDelay: 10,
   cameraFps: 24,
-  chartInterval: 30,
+  chartInterval: 60,
   soundEnabled: true,
 }
