@@ -170,10 +170,54 @@ export function useEyeGuard() {
   const chartDataRef = useRef<BlinkRateEntry[]>([])
   const [chartData, setChartData] = useState<BlinkRateEntry[]>([])
   const blinkRateRef = useRef(0)
+  const hasFirstDataPointRef = useRef(false)
+
+  // Load today's historical chart data from IndexedDB on mount
+  useEffect(() => {
+    async function loadHistoricalChart() {
+      const startOfDay = new Date()
+      startOfDay.setHours(0, 0, 0, 0)
+      const now = new Date()
+
+      const events = await blinkEventRepo.getByTimeRange(startOfDay, now)
+      if (events.length === 0) return
+
+      const intervalMs = settings.chartInterval * 1000
+
+      // Group blink events into chartInterval buckets, counting blinks per bucket
+      const buckets = new Map<number, number>()
+      for (const event of events) {
+        const t = event.timestamp instanceof Date ? event.timestamp : new Date(event.timestamp)
+        const bucket = Math.floor(t.getTime() / intervalMs) * intervalMs
+        buckets.set(bucket, (buckets.get(bucket) ?? 0) + 1)
+      }
+
+      // Convert counts to blinks/min (count per bucket scaled to 60s)
+      const secondsPerBucket = settings.chartInterval
+      const blinksPerMinuteScale = 60 / secondsPerBucket
+
+      const entries: BlinkRateEntry[] = Array.from(buckets.entries())
+        .sort(([a], [b]) => a - b)
+        .slice(-MAX_CHART_POINTS)
+        .map(([ts, count]) => ({
+          time: new Date(ts),
+          rate: Math.round(count * blinksPerMinuteScale),
+        }))
+
+      if (entries.length > 0) {
+        chartDataRef.current = entries
+        setChartData(entries)
+        hasFirstDataPointRef.current = true
+      }
+    }
+
+    loadHistoricalChart()
+  // Run once on mount after settings load
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settingsLoading])
 
   // Keep a fresh reference to blinkRate for the interval callback
   // Also update chart immediately when blinkRate first becomes non-zero
-  const hasFirstDataPointRef = useRef(false)
   useEffect(() => {
     blinkRateRef.current = detection.blinkRate
 

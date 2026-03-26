@@ -21,6 +21,13 @@ export const blinkEventRepo = {
       .toArray()
   },
 
+  async getByTimeRange(from: Date, to: Date): Promise<BlinkEvent[]> {
+    return db.blinkEvents
+      .where('timestamp')
+      .between(from, to)
+      .toArray()
+  },
+
   async pruneOld(retentionDays: number = 7): Promise<number> {
     return db.pruneOldBlinkEvents(retentionDays)
   },
