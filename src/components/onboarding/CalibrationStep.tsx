@@ -19,55 +19,68 @@ export function CalibrationStep({ stream, onComplete }: Props) {
     const video = videoRef.current
     if (!video || !stream) return
 
-    video.srcObject = stream
-    video.play().catch(() => {
-      setError('Could not start video preview.')
-    })
-
-    const tracker = new FaceTracker()
-    const calibration = new CalibrationSession({ targetSamples: 150 })
-    trackerRef.current = tracker
-    calibrationRef.current = calibration
-
     let cancelled = false
 
-    const runLoop = () => {
+    async function start(v: HTMLVideoElement, s: MediaStream) {
+      v.srcObject = s
+      try {
+        await v.play()
+      } catch {
+        if (!cancelled) setError('Could not start video preview.')
+        return
+      }
+
+      if (v.readyState < 2) {
+        await new Promise<void>((resolve) => {
+          v.addEventListener('loadeddata', () => resolve(), { once: true })
+        })
+      }
+
       if (cancelled) return
 
-      const result = tracker.processFrame(video, performance.now())
-      if (result) {
-        calibration.addSample(result.averageEar)
-        setProgress(calibration.progress)
+      const tracker = new FaceTracker()
+      const calibration = new CalibrationSession({ targetSamples: 150 })
+      trackerRef.current = tracker
+      calibrationRef.current = calibration
 
-        if (calibration.isComplete) {
-          const { baselineEAR } = calibration.getResult()
-          onComplete(baselineEAR)
-          return
+      try {
+        await tracker.initialize()
+      } catch {
+        if (!cancelled) setError('Failed to initialize face tracker. Please try again.')
+        return
+      }
+
+      if (cancelled) return
+
+      const runLoop = () => {
+        if (cancelled) return
+
+        const result = tracker.processFrame(v, performance.now())
+        if (result) {
+          calibration.addSample(result.averageEar)
+          setProgress(calibration.progress)
+
+          if (calibration.isComplete) {
+            const { baselineEAR } = calibration.getResult()
+            onComplete(baselineEAR)
+            return
+          }
         }
+
+        animFrameRef.current = requestAnimationFrame(runLoop)
       }
 
       animFrameRef.current = requestAnimationFrame(runLoop)
     }
 
-    tracker
-      .initialize()
-      .then(() => {
-        if (!cancelled) {
-          animFrameRef.current = requestAnimationFrame(runLoop)
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setError('Failed to initialize face tracker. Please try again.')
-        }
-      })
+    start(video, stream)
 
     return () => {
       cancelled = true
       if (animFrameRef.current !== null) {
         cancelAnimationFrame(animFrameRef.current)
       }
-      tracker.destroy()
+      trackerRef.current?.destroy()
       video.srcObject = null
     }
   }, [stream, onComplete])

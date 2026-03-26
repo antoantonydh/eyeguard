@@ -55,10 +55,15 @@ export default function App() {
     return (
       <>
         <video ref={videoRef} autoPlay playsInline muted style={{ display: 'none' }} />
-        <OnboardingFlow onComplete={() => {
-          hasAutoStarted.current = false
-          reloadSettings()
-        }} />
+        <OnboardingFlow
+          cameraStatus={camera.status}
+          stream={camera.stream}
+          onStartCamera={camera.start}
+          onComplete={() => {
+            hasAutoStarted.current = false
+            reloadSettings()
+          }}
+        />
       </>
     )
   }

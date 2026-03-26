@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react'
-import { useCamera } from '../../hooks/use-camera'
+import { useState } from 'react'
 import { userProfileRepo } from '../../storage/user-profile-repository'
 import { WelcomeStep } from './WelcomeStep'
 import { CameraPermissionStep } from './CameraPermissionStep'
@@ -8,36 +7,26 @@ import { CalibrationStep } from './CalibrationStep'
 import { ReadyStep } from './ReadyStep'
 
 type Step = 'welcome' | 'camera' | 'glasses' | 'calibrate' | 'ready'
+type CameraStatus = 'idle' | 'requesting' | 'active' | 'denied' | 'error'
 
 interface Props {
   onComplete: () => void
+  cameraStatus: CameraStatus
+  stream: MediaStream | null
+  onStartCamera: () => Promise<void>
 }
 
-export function OnboardingFlow({ onComplete }: Props) {
+export function OnboardingFlow({ onComplete, cameraStatus, stream, onStartCamera }: Props) {
   const [step, setStep] = useState<Step>('welcome')
   const [wearsGlasses, setWearsGlasses] = useState(false)
-  const { status: cameraStatus, stream, start: startCamera } = useCamera()
 
-  // Advance to glasses step once camera becomes active
-  useEffect(() => {
-    if (step === 'camera' && cameraStatus === 'active') {
+  const handleCameraAllow = async () => {
+    try {
+      await onStartCamera()
       setStep('glasses')
+    } catch {
+      // cameraStatus will be 'denied' or 'error' — UI handles it
     }
-  }, [cameraStatus, step])
-
-  const handleCameraAllow = () => {
-    startCamera().catch(() => {
-      // status will be updated to 'denied' or 'error' by the hook
-    })
-  }
-
-  const handleCameraSkip = () => {
-    setStep('ready')
-  }
-
-  const handleGlassesAnswer = (answer: boolean) => {
-    setWearsGlasses(answer)
-    setStep('calibrate')
   }
 
   const handleCalibrationComplete = async (baselineEAR: number) => {
@@ -58,12 +47,12 @@ export function OnboardingFlow({ onComplete }: Props) {
         <CameraPermissionStep
           cameraStatus={cameraStatus}
           onAllow={handleCameraAllow}
-          onSkip={handleCameraSkip}
+          onSkip={() => setStep('ready')}
         />
       )
 
     case 'glasses':
-      return <GlassesCheckStep onAnswer={handleGlassesAnswer} />
+      return <GlassesCheckStep onAnswer={(answer) => { setWearsGlasses(answer); setStep('calibrate') }} />
 
     case 'calibrate':
       return (
