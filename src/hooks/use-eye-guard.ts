@@ -45,6 +45,7 @@ export function useEyeGuard() {
     blinkRate: detection.blinkRate,
     isStaring: detection.isStaring,
     secondsSinceLastBlink: detection.secondsSinceLastBlink,
+    lowBlinkDurationSeconds: detection.lowBlinkDurationSeconds,
     settings,
     isTracking: detection.isTracking,
   })

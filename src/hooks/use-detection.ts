@@ -11,6 +11,7 @@ interface DetectionState {
   isTracking: boolean
   totalBlinks: number
   stareAlerts: number
+  lowBlinkDurationSeconds: number
 }
 
 export function useDetection(
@@ -21,7 +22,7 @@ export function useDetection(
 ) {
   const [state, setState] = useState<DetectionState>({
     blinkRate: 0, isStaring: false, secondsSinceLastBlink: 0,
-    confidence: 0, isTracking: false, totalBlinks: 0, stareAlerts: 0,
+    confidence: 0, isTracking: false, totalBlinks: 0, stareAlerts: 0, lowBlinkDurationSeconds: 0,
   })
 
   const trackerRef = useRef<FaceTracker | null>(null)
@@ -30,6 +31,7 @@ export function useDetection(
   const lastFrameRef = useRef<number>(0)
   const stareAlertCountRef = useRef(0)
   const wasStaringRef = useRef(false)
+  const lowBlinkStartRef = useRef<number | null>(null)
 
   const startTracking = useCallback(async () => {
     const videoElement = videoRef.current
@@ -70,11 +72,24 @@ export function useDetection(
         const isStaring = detector.isStaring(settings.stareDelay)
         if (isStaring && !wasStaringRef.current) stareAlertCountRef.current++
         wasStaringRef.current = isStaring
+
+        // Track how long blink rate has been below threshold
+        const isLowBlink = detector.blinkRate < settings.blinkThreshold && detector.blinkRate > 0
+        if (isLowBlink) {
+          if (lowBlinkStartRef.current === null) lowBlinkStartRef.current = Date.now()
+        } else {
+          lowBlinkStartRef.current = null
+        }
+        const lowBlinkDurationSeconds = lowBlinkStartRef.current !== null
+          ? (Date.now() - lowBlinkStartRef.current) / 1000
+          : 0
+
         setState({
           blinkRate: detector.blinkRate, isStaring,
           secondsSinceLastBlink: detector.secondsSinceLastBlink,
           confidence: result.confidence, isTracking: true,
           totalBlinks: detector.totalBlinks, stareAlerts: stareAlertCountRef.current,
+          lowBlinkDurationSeconds,
         })
       }
       rafRef.current = requestAnimationFrame(processFrame)

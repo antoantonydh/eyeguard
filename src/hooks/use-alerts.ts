@@ -7,12 +7,13 @@ interface UseAlertsInput {
   blinkRate: number
   isStaring: boolean
   secondsSinceLastBlink: number
+  lowBlinkDurationSeconds: number
   settings: Settings
   isTracking: boolean
 }
 
 export function useAlerts(input: UseAlertsInput) {
-  const { blinkRate, isStaring, secondsSinceLastBlink, settings, isTracking } = input
+  const { blinkRate, isStaring, secondsSinceLastBlink, lowBlinkDurationSeconds, settings, isTracking } = input
   const [isBreakDue, setIsBreakDue] = useState(false)
   const [isBreakActive, setIsBreakActive] = useState(false)
   const [breakCountdown, setBreakCountdown] = useState(0)
@@ -46,10 +47,10 @@ export function useAlerts(input: UseAlertsInput) {
 
   const alert = useMemo(() => {
     const detectionState: DetectionState = {
-      blinkRate, isStaring, secondsSinceLastBlink, isBreakDue, isBreakActive, breakCountdown,
+      blinkRate, isStaring, secondsSinceLastBlink, isBreakDue, isBreakActive, breakCountdown, lowBlinkDurationSeconds,
     }
     return determineAlert(detectionState, settings.blinkThreshold, settings.stareDelay)
-  }, [blinkRate, isStaring, secondsSinceLastBlink, isBreakDue, isBreakActive, breakCountdown, settings])
+  }, [blinkRate, isStaring, secondsSinceLastBlink, lowBlinkDurationSeconds, isBreakDue, isBreakActive, breakCountdown, settings])
 
   const startBreak = useCallback(() => { setIsBreakActive(true); setIsBreakDue(false); timerRef.current?.startBreakCountdown() }, [])
   const skipBreak = useCallback(() => { timerRef.current?.skipBreak(); setIsBreakDue(false); setIsBreakActive(false) }, [])
