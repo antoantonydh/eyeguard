@@ -1,3 +1,4 @@
+import type { FacePresence } from '../../types'
 import { StatusBanner } from './StatusBanner'
 import { BlinkRateChart } from './BlinkRateChart'
 import type { BlinkRateEntry } from './BlinkRateChart'
@@ -25,7 +26,7 @@ interface DashboardPageProps {
   isStaring?: boolean
   secondsSinceLastBlink?: number
   totalBlinks?: number
-  isTracking?: boolean
+  facePresence?: FacePresence
   onCameraPause?: () => void
   onRecalibrate?: () => void
 }
@@ -63,13 +64,13 @@ export function DashboardPage({
   isStaring = false,
   secondsSinceLastBlink = 0,
   totalBlinks = 0,
-  isTracking = false,
+  facePresence = 'absent',
   onCameraPause,
   onRecalibrate,
 }: DashboardPageProps) {
   return (
     <div style={pageStyle}>
-      <StatusBanner blinkRate={blinkRate} minutesUntilBreak={minutesUntilBreak} />
+      <StatusBanner blinkRate={blinkRate} minutesUntilBreak={minutesUntilBreak} facePresence={facePresence} />
 
       <div style={rowStyle}>
         <BlinkRateChart data={blinkHistory} threshold={blinkThreshold} />
@@ -90,6 +91,7 @@ export function DashboardPage({
         fps={cameraFps}
         totalBlinks={totalBlinks}
         blinkRate={blinkRate}
+        facePresence={facePresence}
         onPause={onCameraPause}
         onRecalibrate={onRecalibrate}
       />
@@ -101,7 +103,7 @@ export function DashboardPage({
         isStaring={isStaring}
         secondsSinceLastBlink={secondsSinceLastBlink}
         totalBlinks={totalBlinks}
-        isTracking={isTracking}
+        facePresence={facePresence}
       />
     </div>
   )

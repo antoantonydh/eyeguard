@@ -46,9 +46,20 @@ export function useEyeGuard() {
     isStaring: detection.isStaring,
     secondsSinceLastBlink: detection.secondsSinceLastBlink,
     lowBlinkDurationSeconds: detection.lowBlinkDurationSeconds,
+    facePresence: detection.facePresence,
     settings,
     isTracking: detection.isTracking,
   })
+
+  // Reset break timer when face returns from absent
+  const prevFacePresenceRef = useRef(detection.facePresence)
+  useEffect(() => {
+    const prev = prevFacePresenceRef.current
+    prevFacePresenceRef.current = detection.facePresence
+    if (prev === 'absent' && detection.facePresence === 'present') {
+      alerts.resetBreakTimer()
+    }
+  }, [detection.facePresence, alerts])
 
   // Session lifecycle
   const sessionIdRef = useRef<number | null>(null)
@@ -148,12 +159,12 @@ export function useEyeGuard() {
   const lastRecordedBlinksRef = useRef(0)
   useEffect(() => {
     const id = sessionIdRef.current
-    if (id === null || detection.totalBlinks <= lastRecordedBlinksRef.current) return
+    if (id === null || detection.facePresence !== 'present' || detection.totalBlinks <= lastRecordedBlinksRef.current) return
     lastRecordedBlinksRef.current = detection.totalBlinks
     blinkEventRepo.recordBlink(id, baselineEAR).catch(() => {
       // Non-critical
     })
-  }, [detection.totalBlinks, baselineEAR])
+  }, [detection.totalBlinks, detection.facePresence, baselineEAR])
 
   // Chart data: one entry per chartInterval seconds
   const chartDataRef = useRef<BlinkRateEntry[]>([])

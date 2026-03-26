@@ -1,3 +1,5 @@
+export type FacePresence = 'present' | 'grace' | 'absent'
+
 export interface Session {
   id?: number
   startTime: Date

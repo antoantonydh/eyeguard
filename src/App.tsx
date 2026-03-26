@@ -116,7 +116,7 @@ export default function App() {
                   isStaring={detection.isStaring}
                   secondsSinceLastBlink={detection.secondsSinceLastBlink}
                   totalBlinks={detection.totalBlinks}
-                  isTracking={detection.isTracking}
+                  facePresence={detection.facePresence}
                   onCameraPause={() => {
                     wantTrackingRef.current = false
                     detection.stopTracking()

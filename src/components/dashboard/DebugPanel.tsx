@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import type { FacePresence } from '../../types'
 
 interface Props {
   stream: MediaStream | null
@@ -7,12 +8,12 @@ interface Props {
   isStaring: boolean
   secondsSinceLastBlink: number
   totalBlinks: number
-  isTracking: boolean
+  facePresence: FacePresence
 }
 
 export function DebugPanel({
   stream, blinkRate, confidence, isStaring,
-  secondsSinceLastBlink, totalBlinks, isTracking,
+  secondsSinceLastBlink, totalBlinks, facePresence,
 }: Props) {
   const [visible, setVisible] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -56,7 +57,9 @@ export function DebugPanel({
               padding: '8px 12px', background: 'rgba(0,0,0,0.6)',
               display: 'flex', gap: 16, flexWrap: 'wrap',
             }}>
-              <Stat label="Status" value={isTracking ? 'TRACKING' : 'STOPPED'} color={isTracking ? '#4caf50' : '#f44336'} />
+              <Stat label="Face" value={facePresence.toUpperCase()} color={
+                facePresence === 'present' ? '#4caf50' : facePresence === 'grace' ? '#f59e0b' : '#f44336'
+              } />
               <Stat label="Blinks/min" value={String(blinkRate)} color={blinkRate >= 12 ? '#4caf50' : '#ff9800'} />
               <Stat label="Confidence" value={`${Math.round(confidence * 100)}%`} color={confidence > 0.5 ? '#4caf50' : '#ff9800'} />
               <Stat label="Total Blinks" value={String(totalBlinks)} color="#4fc3f7" />

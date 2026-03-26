@@ -5,7 +5,7 @@ describe('determineAlert', () => {
   const baseState: DetectionState = {
     blinkRate: 18, isStaring: false, secondsSinceLastBlink: 2,
     isBreakDue: false, isBreakActive: false, breakCountdown: 0,
-    lowBlinkDurationSeconds: 0,
+    lowBlinkDurationSeconds: 0, facePresence: 'present',
   }
 
   beforeEach(() => {
@@ -52,6 +52,16 @@ describe('determineAlert', () => {
   it('prioritizes break over blink', () => {
     const s = { ...baseState, blinkRate: 8, isBreakDue: true, lowBlinkDurationSeconds: 35 }
     expect(determineAlert(s, 12, 5)?.type).toBe('break')
+  })
+
+  it('returns null when face is absent regardless of other conditions', () => {
+    const s = { ...baseState, blinkRate: 8, isStaring: true, secondsSinceLastBlink: 7, isBreakDue: true, lowBlinkDurationSeconds: 35, facePresence: 'absent' as const }
+    expect(determineAlert(s, 12, 5)).toBeNull()
+  })
+
+  it('returns null when face is in grace period', () => {
+    const s = { ...baseState, isBreakDue: true, facePresence: 'grace' as const }
+    expect(determineAlert(s, 12, 5)).toBeNull()
   })
 
   it('returns break-active with countdown', () => {

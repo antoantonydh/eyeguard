@@ -6,6 +6,8 @@ export interface AlertState {
   countdown?: number
 }
 
+import type { FacePresence } from '../types'
+
 export interface DetectionState {
   blinkRate: number
   isStaring: boolean
@@ -13,7 +15,8 @@ export interface DetectionState {
   isBreakDue: boolean
   isBreakActive: boolean
   breakCountdown: number
-  lowBlinkDurationSeconds: number // how long blink rate has been below threshold
+  lowBlinkDurationSeconds: number
+  facePresence: FacePresence
 }
 
 const SUSTAINED_LOW_BLINK_SECONDS = 30
@@ -22,6 +25,9 @@ const BLINK_ALERT_COOLDOWN_MS = 60_000
 let lastBlinkAlertTime = 0
 
 export function determineAlert(state: DetectionState, blinkThreshold: number, stareDelay: number): AlertState | null {
+  // No alerts when face is not present
+  if (state.facePresence !== 'present') return null
+
   if (state.isBreakActive) return { type: 'break', message: 'Look at something 20 feet away', countdown: state.breakCountdown }
   if (state.isStaring && state.secondsSinceLastBlink >= stareDelay) return { type: 'stare', message: `Blink now — ${Math.round(state.secondsSinceLastBlink)}s without blinking` }
   if (state.isBreakDue) return { type: 'break', message: 'Time for a 20-20-20 break' }

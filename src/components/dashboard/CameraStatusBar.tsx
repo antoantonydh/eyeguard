@@ -1,3 +1,5 @@
+import type { FacePresence } from '../../types'
+
 interface CameraStatusBarProps {
   isActive?: boolean
   confidence?: number
@@ -5,6 +7,7 @@ interface CameraStatusBarProps {
   fps?: number
   totalBlinks?: number
   blinkRate?: number
+  facePresence?: FacePresence
   onPause?: () => void
   onRecalibrate?: () => void
 }
@@ -16,6 +19,7 @@ export function CameraStatusBar({
   fps = 0,
   totalBlinks = 0,
   blinkRate = 0,
+  facePresence = 'absent',
   onPause,
   onRecalibrate,
 }: CameraStatusBarProps) {
@@ -74,8 +78,18 @@ export function CameraStatusBar({
         <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
       </svg>
 
-      <div style={statusDotStyle} />
-      <span style={valueStyle}>{isActive ? 'Active' : 'Paused'}</span>
+      <div style={{
+        ...statusDotStyle,
+        background: facePresence === 'present' ? '#22c55e'
+          : facePresence === 'grace' ? '#f59e0b'
+          : '#475569',
+      }} />
+      <span style={valueStyle}>
+        {!isActive ? 'Paused'
+          : facePresence === 'present' ? 'Active'
+          : facePresence === 'grace' ? 'Detecting...'
+          : 'No face — paused'}
+      </span>
 
       <div style={dividerStyle} />
 
