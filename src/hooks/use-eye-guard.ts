@@ -51,13 +51,20 @@ export function useEyeGuard() {
     isTracking: detection.isTracking,
   })
 
-  // Reset break timer when face returns from absent
+  // Reset break timer only when face returns after genuinely being away
+  // (not on initial startup where absent→present is the normal first transition)
   const prevFacePresenceRef = useRef(detection.facePresence)
+  const hasBeenPresentRef = useRef(false)
   useEffect(() => {
     const prev = prevFacePresenceRef.current
     prevFacePresenceRef.current = detection.facePresence
-    if (prev === 'absent' && detection.facePresence === 'present') {
-      alerts.resetBreakTimer()
+
+    if (detection.facePresence === 'present') {
+      if (prev === 'absent' && hasBeenPresentRef.current) {
+        // Genuine return: was present before, went absent, now back
+        alerts.resetBreakTimer()
+      }
+      hasBeenPresentRef.current = true
     }
   }, [detection.facePresence, alerts])
 
