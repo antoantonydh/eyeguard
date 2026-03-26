@@ -120,32 +120,44 @@ export function useEyeGuard() {
     const id = sessionIdRef.current
     if (id === null) return
     try {
+      // Compute true session average: total blinks / session duration in minutes
+      const sessionMinutes = sessionStartRef.current
+        ? Math.max(1, (Date.now() - sessionStartRef.current.getTime()) / 60000)
+        : 1
+      const sessionAvgBlinkRate = Math.round(detection.totalBlinks / sessionMinutes)
+
       await sessionRepo.endSession(id, {
-        avgBlinkRate: detection.blinkRate,
+        avgBlinkRate: sessionAvgBlinkRate,
         breaksOffered: alerts.breaksOffered,
         breaksTaken: alerts.breaksTaken,
         stareAlerts: detection.stareAlerts,
         blinkThreshold: settings.blinkThreshold,
       })
 
-      // Persist daily stats
-      const sessionMinutes = sessionStartRef.current
-        ? Math.round((Date.now() - sessionStartRef.current.getTime()) / 60000)
-        : 0
+      const sessionMinutesRounded = Math.round(sessionMinutes)
 
       const score = calculateScore({
-        avgBlinkRate: detection.blinkRate,
+        avgBlinkRate: sessionAvgBlinkRate,
         breaksTaken: alerts.breaksTaken,
         breaksOffered: alerts.breaksOffered,
         stareAlerts: detection.stareAlerts,
         blinkThreshold: settings.blinkThreshold,
       })
 
-      // Accumulate into today's daily stats (not replace)
+      // Accumulate into today's daily stats — weighted average of blink rate
       const existing = await dailyStatsRepo.getByDate(todayString())
+      const existingMinutes = existing?.totalScreenTime ?? 0
+      const totalMinutes = existingMinutes + sessionMinutesRounded
+      const weightedAvgBlink = totalMinutes > 0
+        ? Math.round(
+            ((existing?.avgBlinkRate ?? 0) * existingMinutes + sessionAvgBlinkRate * sessionMinutesRounded)
+            / totalMinutes
+          )
+        : sessionAvgBlinkRate
+
       await dailyStatsRepo.upsert(todayString(), {
-        totalScreenTime: (existing?.totalScreenTime ?? 0) + sessionMinutes,
-        avgBlinkRate: detection.blinkRate > 0 ? detection.blinkRate : (existing?.avgBlinkRate ?? 0),
+        totalScreenTime: totalMinutes,
+        avgBlinkRate: weightedAvgBlink,
         breaksTaken: (existing?.breaksTaken ?? 0) + alerts.breaksTaken,
         breaksSkipped: (existing?.breaksSkipped ?? 0) + (alerts.breaksOffered - alerts.breaksTaken),
         stareAlerts: (existing?.stareAlerts ?? 0) + detection.stareAlerts,
@@ -177,12 +189,19 @@ export function useEyeGuard() {
         // Save current stats to DB without ending the session ID
         // so data isn't lost if the user closes mid-session
         void dailyStatsRepo.getByDate(todayString()).then(async (existing) => {
-          const sessionMinutes = sessionStartRef.current
-            ? Math.round((Date.now() - sessionStartRef.current.getTime()) / 60000)
-            : 0
+          const sessionMins = sessionStartRef.current
+            ? Math.max(1, (Date.now() - sessionStartRef.current.getTime()) / 60000)
+            : 1
+          const sessionMinsRounded = Math.round(sessionMins)
+          const checkpointAvg = Math.round(detection.totalBlinks / sessionMins)
+          const existingMins = existing?.totalScreenTime ?? 0
+          const totalMins = existingMins + sessionMinsRounded
+          const weightedAvg = totalMins > 0
+            ? Math.round(((existing?.avgBlinkRate ?? 0) * existingMins + checkpointAvg * sessionMinsRounded) / totalMins)
+            : checkpointAvg
           await dailyStatsRepo.upsert(todayString(), {
-            totalScreenTime: (existing?.totalScreenTime ?? 0) + sessionMinutes,
-            avgBlinkRate: detection.blinkRate > 0 ? detection.blinkRate : (existing?.avgBlinkRate ?? 0),
+            totalScreenTime: totalMins,
+            avgBlinkRate: weightedAvg,
             breaksTaken: (existing?.breaksTaken ?? 0) + alerts.breaksTaken,
             breaksSkipped: (existing?.breaksSkipped ?? 0) + (alerts.breaksOffered - alerts.breaksTaken),
             stareAlerts: (existing?.stareAlerts ?? 0) + detection.stareAlerts,
