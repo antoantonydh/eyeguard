@@ -171,6 +171,8 @@ export default function App() {
                   secondsSinceLastBlink={detection.secondsSinceLastBlink}
                   totalBlinks={totalBlinks}
                   facePresence={detection.facePresence}
+                  isBreakActive={alerts.isBreakActive}
+                  breakCountdown={alerts.alert?.type === 'break' ? (alerts.alert.countdown ?? 0) : 0}
                   cameraDevices={camera.devices}
                   selectedCameraId={camera.selectedDeviceId}
                   onSwitchCamera={async (deviceId) => {

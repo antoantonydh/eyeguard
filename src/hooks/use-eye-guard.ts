@@ -61,8 +61,10 @@ export function useEyeGuard() {
 
     if (detection.facePresence === 'present') {
       if (prev === 'absent' && hasBeenPresentRef.current) {
-        // Genuine return: was present before, went absent, now back
-        alerts.resetBreakTimer()
+        // Only reset break timer if user wasn't on a break (looking away during break is correct)
+        if (!alerts.isBreakActive) {
+          alerts.resetBreakTimer()
+        }
       }
       hasBeenPresentRef.current = true
     }

@@ -28,6 +28,8 @@ interface DashboardPageProps {
   secondsSinceLastBlink?: number
   totalBlinks?: number
   facePresence?: FacePresence
+  isBreakActive?: boolean
+  breakCountdown?: number
   cameraDevices?: CameraDevice[]
   selectedCameraId?: string
   onSwitchCamera?: (deviceId: string) => void
@@ -69,6 +71,8 @@ export function DashboardPage({
   secondsSinceLastBlink = 0,
   totalBlinks = 0,
   facePresence = 'absent',
+  isBreakActive = false,
+  breakCountdown = 0,
   cameraDevices = [],
   selectedCameraId = '',
   onSwitchCamera,
@@ -77,7 +81,13 @@ export function DashboardPage({
 }: DashboardPageProps) {
   return (
     <div style={pageStyle}>
-      <StatusBanner blinkRate={blinkRate} minutesUntilBreak={minutesUntilBreak} facePresence={facePresence} />
+      <StatusBanner
+        blinkRate={blinkRate}
+        minutesUntilBreak={minutesUntilBreak}
+        facePresence={facePresence}
+        isBreakActive={isBreakActive}
+        breakCountdown={breakCountdown}
+      />
 
       <CameraStatusBar
         isActive={cameraActive}

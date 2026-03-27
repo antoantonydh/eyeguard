@@ -158,5 +158,5 @@ export function useAlerts(input: UseAlertsInput) {
     }
   }, [settings.breakInterval])
 
-  return { alert, startBreak, skipBreak, resetBreakTimer, minutesUntilBreak, breaksOffered, breaksTaken }
+  return { alert, startBreak, skipBreak, resetBreakTimer, minutesUntilBreak, breaksOffered, breaksTaken, isBreakActive }
 }
