@@ -26,8 +26,8 @@ const SETTING_INFO: Record<string, SettingInfo> = {
     sourceUrl: 'https://www.nature.com/articles/s41598-025-26424-z',
   },
   stareDelay: {
-    text: 'Normal interblink: ~6 sec. Tear film starts breaking down at ~10 sec. Alert fires before damage occurs.',
-    sourceLabel: 'Scientific Reports, 2018',
+    text: 'Healthy adults average 6s between blinks, with natural gaps up to 14.4s (Maximum Blink Interval). A single 10s gap is physiologically normal. Alert at 20s catches genuinely abnormal staring with low false-positive rate.',
+    sourceLabel: 'Inomata et al., Scientific Reports, 2018',
     sourceUrl: 'https://www.nature.com/articles/s41598-018-31814-7',
   },
   cameraFps: {
@@ -212,10 +212,13 @@ export function SettingsPage() {
             <label style={labelStyle} htmlFor="stareDelay">Stare Alert Delay</label>
             <InfoTooltip settingKey="stareDelay" />
           </div>
-          <input id="stareDelay" type="number" min={5} max={15}
-            value={settings.stareDelay} onChange={handleNumberChange('stareDelay', 5, 15)}
+          <input id="stareDelay" type="number" min={10} max={30}
+            value={settings.stareDelay} onChange={handleNumberChange('stareDelay', 10, 30)}
             style={inputStyle} />
-          <span style={hintStyle}>Seconds without blinking before alert (5-15)</span>
+          <span style={hintStyle}>
+            Seconds without blinking before alert (10–30).
+            15s = sensitive · <strong style={{ color: '#4fc3f7' }}>20s = recommended</strong> · 30s = minimal
+          </span>
         </div>
 
         <hr style={dividerStyle} />
