@@ -3,7 +3,7 @@ import { FaceTracker } from '../detection/face-tracker'
 import { BlinkDetector } from '../detection/blink-detector'
 import type { Settings, FacePresence } from '../types'
 
-const GRACE_PERIOD_MS = 3000
+const GRACE_PERIOD_MS = 15_000
 
 interface DetectionState {
   blinkRate: number

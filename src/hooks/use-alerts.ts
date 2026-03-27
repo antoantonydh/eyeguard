@@ -23,6 +23,7 @@ export function useAlerts(input: UseAlertsInput) {
   const [breaksOffered, setBreaksOffered] = useState(0)
   const [breaksTaken, setBreaksTaken] = useState(0)
   const timerRef = useRef<BreakTimer | null>(null)
+  const countdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const BREAK_TIMER_KEY = 'eyeguard_break_timer_start'
 
@@ -43,7 +44,13 @@ export function useAlerts(input: UseAlertsInput) {
         }
       },
       onBreakComplete: (taken) => {
-        setIsBreakActive(false); setIsBreakDue(false); setBreakCountdown(0)
+        setIsBreakActive(false)
+        setIsBreakDue(false)
+        setBreakCountdown(0)
+        if (countdownIntervalRef.current) {
+          clearInterval(countdownIntervalRef.current)
+          countdownIntervalRef.current = null
+        }
         if (taken) setBreaksTaken(prev => prev + 1)
       },
     })
@@ -67,30 +74,74 @@ export function useAlerts(input: UseAlertsInput) {
       }
     }, 1000)
 
-    return () => { timer.stop(); clearInterval(interval) }
+    return () => {
+      timer.stop()
+      clearInterval(interval)
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current)
+        countdownIntervalRef.current = null
+      }
+    }
   }, [isTracking, settings.breakInterval, settings.breakDuration])
 
+  // Compute alert (pure derivation — no side effects here)
   const alert = useMemo(() => {
     const detectionState: DetectionState = {
       blinkRate, isStaring, secondsSinceLastBlink, isBreakDue, isBreakActive,
       breakCountdown, lowBlinkDurationSeconds, facePresence,
     }
-    const result = determineAlert(detectionState, settings.blinkThreshold, settings.stareDelay)
+    return determineAlert(detectionState, settings.blinkThreshold, settings.stareDelay)
+  }, [blinkRate, isStaring, secondsSinceLastBlink, lowBlinkDurationSeconds, facePresence, isBreakDue, isBreakActive, breakCountdown, settings])
 
-    // Fire OS notification for blink alert when app is in background
-    if (result?.type === 'blink' && settings.nativeNotifications) {
+  // Send native notification when alert TYPE changes (not on every recompute)
+  const prevAlertTypeRef = useRef<string | null>(null)
+  useEffect(() => {
+    const type = alert?.type ?? null
+    if (type === prevAlertTypeRef.current) return
+    prevAlertTypeRef.current = type
+
+    if (type === 'blink' && settings.nativeNotifications && alert) {
       sendNativeNotification({
         title: '👁 Remember to Blink',
-        body: result.message,
+        body: alert.message,
         tag: 'eyeguard-blink',
       })
     }
+  }, [alert, settings.nativeNotifications])
 
-    return result
-  }, [blinkRate, isStaring, secondsSinceLastBlink, lowBlinkDurationSeconds, facePresence, isBreakDue, isBreakActive, breakCountdown, settings])
+  const startBreak = useCallback(() => {
+    const duration = settings.breakDuration
+    setIsBreakActive(true)
+    setIsBreakDue(false)
+    setBreakCountdown(duration)
+    timerRef.current?.startBreakCountdown()
 
-  const startBreak = useCallback(() => { setIsBreakActive(true); setIsBreakDue(false); timerRef.current?.startBreakCountdown() }, [])
-  const skipBreak = useCallback(() => { timerRef.current?.skipBreak(); setIsBreakDue(false); setIsBreakActive(false) }, [])
+    // Tick the countdown down every second
+    if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current)
+    countdownIntervalRef.current = setInterval(() => {
+      setBreakCountdown(prev => {
+        if (prev <= 1) {
+          if (countdownIntervalRef.current) {
+            clearInterval(countdownIntervalRef.current)
+            countdownIntervalRef.current = null
+          }
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+  }, [settings.breakDuration])
+
+  const skipBreak = useCallback(() => {
+    timerRef.current?.skipBreak()
+    setIsBreakDue(false)
+    setIsBreakActive(false)
+    setBreakCountdown(0)
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current)
+      countdownIntervalRef.current = null
+    }
+  }, [])
 
   const resetBreakTimer = useCallback(() => {
     timerRef.current?.reset()
@@ -101,6 +152,10 @@ export function useAlerts(input: UseAlertsInput) {
     setIsBreakActive(false)
     setBreakCountdown(0)
     setMinutesUntilBreak(settings.breakInterval)
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current)
+      countdownIntervalRef.current = null
+    }
   }, [settings.breakInterval])
 
   return { alert, startBreak, skipBreak, resetBreakTimer, minutesUntilBreak, breaksOffered, breaksTaken }
