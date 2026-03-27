@@ -71,11 +71,30 @@ export function TopNav({ isTrackingActive, onToggleTracking }: TopNavProps) {
   const [isInstalled, setIsInstalled] = useState(false)
 
   useEffect(() => {
-    const handler = (e: Event) => { e.preventDefault(); setInstallPrompt(e) }
-    window.addEventListener('beforeinstallprompt', handler)
-    window.addEventListener('appinstalled', () => setIsInstalled(true))
     // Check if already running as installed PWA
-    if (window.matchMedia('(display-mode: standalone)').matches) setIsInstalled(true)
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setIsInstalled(true)
+      return
+    }
+
+    // Pick up prompt captured early in main.tsx (fires before React mounts)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const early = (window as any).__pwaInstallPrompt
+    if (early) setInstallPrompt(early)
+
+    // Also listen for future events (e.g. after navigating back)
+    const handler = (e: Event) => {
+      e.preventDefault()
+      setInstallPrompt(e)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ;(window as any).__pwaInstallPrompt = e
+    }
+    window.addEventListener('beforeinstallprompt', handler)
+    window.addEventListener('appinstalled', () => {
+      setIsInstalled(true)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ;(window as any).__pwaInstallPrompt = null
+    })
     return () => window.removeEventListener('beforeinstallprompt', handler)
   }, [])
 
