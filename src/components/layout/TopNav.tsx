@@ -1,10 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { useEffect, useState } from 'react'
-
-interface BeforeInstallPromptEvent extends Event {
-  prompt(): Promise<void>
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
-}
+import { usePwaContext } from '../../context/PwaContext'
 
 interface TopNavProps {
   isTrackingActive: boolean
@@ -67,66 +62,22 @@ const toggleButtonStyle = (isActive: boolean): React.CSSProperties => ({
 })
 
 export function TopNav({ isTrackingActive, onToggleTracking }: TopNavProps) {
-  const [installPrompt, setInstallPrompt] = useState<Event | null>(null)
-  const [isInstalled, setIsInstalled] = useState(false)
-
-  useEffect(() => {
-    // Check if already running as installed PWA
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      setIsInstalled(true)
-      return
-    }
-
-    // Pick up prompt captured early in main.tsx (fires before React mounts)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const early = (window as any).__pwaInstallPrompt
-    if (early) setInstallPrompt(early)
-
-    // Also listen for future events (e.g. after navigating back)
-    const handler = (e: Event) => {
-      e.preventDefault()
-      setInstallPrompt(e)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ;(window as any).__pwaInstallPrompt = e
-    }
-    window.addEventListener('beforeinstallprompt', handler)
-    window.addEventListener('appinstalled', () => {
-      setIsInstalled(true)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ;(window as any).__pwaInstallPrompt = null
-    })
-    return () => window.removeEventListener('beforeinstallprompt', handler)
-  }, [])
-
-  const handleInstall = async () => {
-    if (!installPrompt) return
-    const prompt = installPrompt as BeforeInstallPromptEvent
-    await prompt.prompt()
-    const { outcome } = await prompt.userChoice
-    if (outcome === 'accepted') setIsInstalled(true)
-    setInstallPrompt(null)
-  }
+  const { canInstall, install } = usePwaContext()
 
   return (
     <nav style={navStyle}>
       <span style={brandStyle}>👁 EyeGuard</span>
 
       <div style={linksStyle}>
-        <NavLink to="/" end style={navLinkStyle}>
-          Dashboard
-        </NavLink>
-        <NavLink to="/history" style={navLinkStyle}>
-          History
-        </NavLink>
-        <NavLink to="/settings" style={navLinkStyle}>
-          Settings
-        </NavLink>
+        <NavLink to="/" end style={navLinkStyle}>Dashboard</NavLink>
+        <NavLink to="/history" style={navLinkStyle}>History</NavLink>
+        <NavLink to="/settings" style={navLinkStyle}>Settings</NavLink>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        {installPrompt && !isInstalled && (
+        {canInstall && (
           <button
-            onClick={handleInstall}
+            onClick={install}
             title="Install EyeGuard as a standalone app — runs in its own window so tab-switching doesn't pause tracking"
             style={{
               padding: '6px 14px', borderRadius: 6,

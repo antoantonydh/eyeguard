@@ -8,10 +8,10 @@ import { OverlayManager } from './components/overlays/OverlayManager'
 import { OnboardingFlow } from './components/onboarding/OnboardingFlow'
 import { useEyeGuard } from './hooks/use-eye-guard'
 import { requestNotificationPermission } from './utils/notifications'
-import { usePwaUpdate } from './hooks/use-pwa-update'
+import { usePwaContext } from './context/PwaContext'
 
 export default function App() {
-  const { updateAvailable, applyUpdate } = usePwaUpdate()
+  const { updateAvailable, applyUpdate } = usePwaContext()
   const {
     camera,
     detection,
