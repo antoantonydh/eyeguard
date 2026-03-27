@@ -25,6 +25,10 @@ export default defineConfig({
           { src: 'maskable-icon-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
+      devOptions: {
+        enabled: true, // register SW in dev mode so beforeinstallprompt fires on localhost
+        type: 'module',
+      },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico}'],
         // Cache MediaPipe WASM and model files from CDN
