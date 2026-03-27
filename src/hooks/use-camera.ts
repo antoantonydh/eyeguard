@@ -45,16 +45,32 @@ export function useCamera() {
           ? { deviceId: { exact: targetDevice }, width: 640, height: 480 }
           : { facingMode: 'user', width: 640, height: 480 },
       }
-      const mediaStream = await navigator.mediaDevices.getUserMedia(constraints)
+      // Timeout prevents hanging indefinitely (e.g. after system restore when camera hardware isn't ready)
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new DOMException('Camera request timed out', 'TimeoutError')), 10_000)
+      )
+      const mediaStream = await Promise.race([
+        navigator.mediaDevices.getUserMedia(constraints),
+        timeout,
+      ])
       setStream(mediaStream)
       setStatus('active')
-      // After getting permission, real device labels are available
       refreshDevices()
     } catch (err) {
       const error = err as DOMException
-      setStatus(error.name === 'NotAllowedError' ? 'denied' : 'error')
+      if (error.name === 'NotAllowedError') {
+        setStatus('denied')
+      } else {
+        setStatus('error')
+      }
     }
   }, [selectedDeviceId, refreshDevices])
+
+  /** Check if current stream tracks are still alive (not ended by OS/bfcache) */
+  const isStreamAlive = useCallback((): boolean => {
+    if (!stream) return false
+    return stream.getTracks().every(t => t.readyState === 'live')
+  }, [stream])
 
   const stop = useCallback(() => {
     stream?.getTracks().forEach(track => track.stop())
@@ -75,5 +91,5 @@ export function useCamera() {
     return () => { stream?.getTracks().forEach(track => track.stop()) }
   }, [stream])
 
-  return { status, stream, videoRef, devices, selectedDeviceId, start, stop, switchCamera }
+  return { status, stream, videoRef, devices, selectedDeviceId, start, stop, switchCamera, isStreamAlive }
 }
