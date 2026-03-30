@@ -31,6 +31,12 @@ export const userProfileRepo = {
     })
   },
 
+  async clearCalibration(): Promise<void> {
+    const profile = await db.userProfile.get(1)
+    if (!profile) return
+    await db.userProfile.update(1, { baselineEAR: 0 })
+  },
+
   async isCalibrated(): Promise<boolean> {
     const profile = await db.userProfile.get(1)
     return profile != null && profile.baselineEAR > 0

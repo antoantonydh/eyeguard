@@ -9,6 +9,7 @@ import { OnboardingFlow } from './components/onboarding/OnboardingFlow'
 import { useEyeGuard } from './hooks/use-eye-guard'
 import { requestNotificationPermission } from './utils/notifications'
 import { usePwaContext } from './context/PwaContext'
+import { userProfileRepo } from './storage/user-profile-repository'
 
 export default function App() {
   const { updateAvailable, applyUpdate } = usePwaContext()
@@ -185,10 +186,11 @@ export default function App() {
                     detection.stopTracking()
                     camera.stop()
                   }}
-                  onRecalibrate={() => {
+                  onRecalibrate={async () => {
                     detection.stopTracking()
                     camera.stop()
-                    window.location.href = '/'
+                    await userProfileRepo.clearCalibration()
+                    reloadSettings()
                   }}
                 />
               }
