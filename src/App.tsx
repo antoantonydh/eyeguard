@@ -196,7 +196,15 @@ export default function App() {
               }
             />
             <Route path="history" element={<HistoryPage />} />
-            <Route path="settings" element={<SettingsPage />} />
+            <Route path="settings" element={
+              <SettingsPage onReset={() => {
+                detection.stopTracking()
+                camera.stop()
+                wantTrackingRef.current = false
+                hasAutoStarted.current = false
+                reloadSettings()
+              }} />
+            } />
           </Route>
         </Routes>
 

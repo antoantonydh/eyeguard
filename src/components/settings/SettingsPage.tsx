@@ -126,7 +126,7 @@ const inputStyle: React.CSSProperties = {
 const hintStyle: React.CSSProperties = { color: '#546e7a', fontSize: '12px' }
 const dividerStyle: React.CSSProperties = { border: 'none', borderTop: '1px solid #1e2d4d', margin: '4px 0' }
 
-export function SettingsPage() {
+export function SettingsPage({ onReset }: { onReset?: () => void } = {}) {
   const { settings, loading, updateSettings } = useSettings()
   const [notifPermission, setNotifPermission] = useState<NotificationPermission>('default')
 
@@ -290,7 +290,7 @@ export function SettingsPage() {
             onClick={async () => {
               if (window.confirm('Delete all EyeGuard data and restart?')) {
                 await userProfileRepo.resetAll()
-                window.location.href = '/'
+                onReset?.()
               }
             }}
             style={{
