@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { FaceTracker } from '../../detection/face-tracker'
 import { CalibrationSession } from '../../detection/calibrator'
 
@@ -14,6 +14,16 @@ export function CalibrationStep({ stream, onComplete }: Props) {
   const calibrationRef = useRef<CalibrationSession | null>(null)
   const [progress, setProgress] = useState(0)
   const [error, setError] = useState<string | null>(null)
+
+  // Stable ref so the calibration loop always calls the latest onComplete
+  // without that reference being in the effect deps (which would restart the
+  // entire calibration — tracker init + rAF loop — on every parent re-render)
+  const onCompleteRef = useRef(onComplete)
+  useEffect(() => { onCompleteRef.current = onComplete })
+
+  const stableOnComplete = useCallback((ear: number) => {
+    onCompleteRef.current(ear)
+  }, [])
 
   useEffect(() => {
     const video = videoRef.current
@@ -62,7 +72,7 @@ export function CalibrationStep({ stream, onComplete }: Props) {
 
           if (calibration.isComplete) {
             const { baselineEAR } = calibration.getResult()
-            onComplete(baselineEAR)
+            stableOnComplete(baselineEAR)
             return
           }
         }
@@ -76,6 +86,9 @@ export function CalibrationStep({ stream, onComplete }: Props) {
     start(video, stream)
 
     return () => {
+      // Note: stableOnComplete is excluded from deps intentionally — it is
+      // stable by construction (useCallback with []). Only a genuine stream
+      // change should restart the calibration loop.
       cancelled = true
       if (animFrameRef.current !== null) {
         cancelAnimationFrame(animFrameRef.current)
@@ -83,7 +96,7 @@ export function CalibrationStep({ stream, onComplete }: Props) {
       trackerRef.current?.destroy()
       video.srcObject = null
     }
-  }, [stream, onComplete])
+  }, [stream, stableOnComplete])
 
   const containerStyle: React.CSSProperties = {
     display: 'flex',

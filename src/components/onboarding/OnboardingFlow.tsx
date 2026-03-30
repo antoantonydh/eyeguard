@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { userProfileRepo } from '../../storage/user-profile-repository'
 import { WelcomeStep } from './WelcomeStep'
 import { CameraPermissionStep } from './CameraPermissionStep'
@@ -29,14 +29,14 @@ export function OnboardingFlow({ onComplete, cameraStatus, stream, onStartCamera
     }
   }
 
-  const handleCalibrationComplete = async (baselineEAR: number) => {
+  const handleCalibrationComplete = useCallback(async (baselineEAR: number) => {
     try {
       await userProfileRepo.saveCalibration(baselineEAR, wearsGlasses)
     } catch (err) {
       console.error('Failed to save calibration:', err)
     }
     setStep('ready')
-  }
+  }, [wearsGlasses])
 
   switch (step) {
     case 'welcome':

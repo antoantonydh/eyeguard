@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useCallback } from 'react'
 import { AppLayout } from './components/layout/AppLayout'
 import { DashboardPage } from './components/dashboard/DashboardPage'
 import { HistoryPage } from './components/history/HistoryPage'
@@ -106,6 +106,11 @@ export default function App() {
     }
   }
 
+  const useOnboardingComplete = useCallback(() => {
+    hasAutoStarted.current = false
+    reloadSettings()
+  }, [reloadSettings])
+
   if (!isCalibrated) {
     return (
       <>
@@ -114,10 +119,7 @@ export default function App() {
           cameraStatus={camera.status}
           stream={camera.stream}
           onStartCamera={camera.start}
-          onComplete={() => {
-            hasAutoStarted.current = false
-            reloadSettings()
-          }}
+          onComplete={useOnboardingComplete}
         />
       </>
     )
