@@ -54,20 +54,30 @@ export class FaceTracker {
     const rightEar = calculateEAR(rightEye)
     const averageEar = (leftEar + rightEar) / 2
 
-    let confidence = 0.5
+    // Confidence = how well both eyes are being tracked symmetrically.
+    //
+    // Blendshape scores are face action-unit intensities (eyeBlink, jawOpen, …).
+    // On a neutral face virtually all are ~0, so their average is 0.06–0.08
+    // regardless of tracking quality — semantically wrong for a confidence signal.
+    //
+    // The `visibility` field would be ideal but FaceLandmarker does not populate
+    // it (that's a Pose-only feature in this SDK version; it will be 0 for all
+    // face landmarks).
+    //
+    // Best available proxy: EAR symmetry. When both eyes track consistently
+    // (leftEar ≈ rightEar), the face is well-aligned for measurement → high
+    // confidence. Large asymmetry indicates a turned face or occlusion → lower.
+    const eyePoints = [...LEFT_EYE_INDICES, ...RIGHT_EYE_INDICES].map(i => landmarks[i])
+    const avgVisibility = eyePoints.reduce((s, p) => s + p.visibility, 0) / eyePoints.length
 
-    if (results.faceBlendshapes && results.faceBlendshapes.length > 0) {
-      const scores = results.faceBlendshapes[0].categories
-        .map(c => c.score)
-        .filter(s => s > 0)
-      confidence =
-        scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0.5
+    let confidence: number
+    if (avgVisibility > 0) {
+      // Model populated visibility — use it directly.
+      confidence = avgVisibility
     } else {
-      const eyePoints = [...LEFT_EYE_INDICES, ...RIGHT_EYE_INDICES].map(i => landmarks[i])
-      const avgY = eyePoints.reduce((s, p) => s + p.y, 0) / eyePoints.length
-      const variance =
-        eyePoints.reduce((s, p) => s + (p.y - avgY) ** 2, 0) / eyePoints.length
-      confidence = Math.min(1, Math.max(0, 1 - variance * 100))
+      // EAR symmetry fallback: 1 when both eyes identical, lower as they diverge.
+      const maxEar = Math.max(leftEar, rightEar, 0.001)
+      confidence = Math.max(0, 1 - Math.abs(leftEar - rightEar) / maxEar)
     }
 
     return { leftEar, rightEar, averageEar, confidence }
