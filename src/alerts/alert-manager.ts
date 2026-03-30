@@ -25,10 +25,11 @@ const BLINK_ALERT_COOLDOWN_MS = 60_000
 let lastBlinkAlertTime = 0
 
 export function determineAlert(state: DetectionState, blinkThreshold: number, stareDelay: number): AlertState | null {
-  // No alerts when face is not present
-  if (state.facePresence !== 'present') return null
-
+  // Keep break overlay visible even when face is absent — user is supposed to look away
   if (state.isBreakActive) return { type: 'break', message: 'Look at something 20 feet away', countdown: state.breakCountdown }
+
+  // No other alerts when face is not present
+  if (state.facePresence !== 'present') return null
   if (state.isStaring && state.secondsSinceLastBlink >= stareDelay) return { type: 'stare', message: `Blink now — ${Math.round(state.secondsSinceLastBlink)}s without blinking` }
   if (state.isBreakDue) return { type: 'break', message: 'Time for a 20-20-20 break' }
 

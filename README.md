@@ -12,13 +12,13 @@ A web app that monitors your blink rate via webcam and helps prevent dry eyes an
 - **Low blink rate alerts** — after 30+ seconds below your threshold
 - **Glasses support** — personal calibration adjusts to your eyes (with or without glasses)
 - **Face presence detection** — tracking pauses automatically when you walk away and resumes when you return
-- **Dashboard** with live blink rate chart, daily score, session timeline, and break tracking
+- **Dashboard** with live blink rate chart, daily score, session timeline (healthy / low-blink / break segments), and break tracking
 - **Persistent data** — chart, breaks, blink count, and score survive page reloads (stored in IndexedDB)
 - **Sound alerts** — distinct sounds for blink, break, and stare events (configurable)
 
 ## Tech Stack
 
-- React 18 + TypeScript + Vite
+- React 19 + TypeScript + Vite
 - [MediaPipe Face Mesh](https://ai.google.dev/edge/mediapipe/solutions/vision/face_landmarker) — eye landmark detection
 - [Dexie.js](https://dexie.org) — IndexedDB wrapper for local data storage
 - Web Audio API — in-browser sound generation (no audio files)
@@ -45,7 +45,7 @@ yarn
 yarn dev
 
 # Run tests
-npx vitest run
+yarn vitest run
 
 # Build for production
 yarn build
@@ -73,10 +73,10 @@ On first launch, you blink naturally for 10 seconds. The app calculates your per
 
 If no face is detected for 3+ seconds:
 - All counters freeze (blink rate, stare timer)
-- All alerts are suppressed
+- All alerts are suppressed (except during an active break — the break overlay stays visible so the countdown is not interrupted when you look away)
 - Session time stops accumulating
 - Dashboard shows "Face not detected — tracking paused"
-- Break timer resets to full interval when you return
+- Break timer resets to full interval when you return (unless a break was active)
 
 ### Data Storage
 
@@ -104,9 +104,9 @@ All defaults are based on published eye health research:
 | Setting | Default | Reasoning |
 |---------|---------|-----------|
 | Break interval | 20 min | AOA/AAO 20-20-20 rule consensus |
-| Break duration | 60 sec | 20s shown ineffective (Rosenfield 2023) |
+| Break duration | 20 sec | 20-20-20 rule: look away for 20 seconds |
 | Blink threshold | 12/min | Healthy avg ~14/min; screen use drops to 4-6/min |
-| Stare delay | 10 sec | Normal interblink ~6s; tear film breaks at ~10s |
+| Stare delay | 20 sec | Low false-positives; healthy max interblink ~14s |
 | Camera FPS | 24 | Fast blinks (~100ms) need 3+ frames for reliable detection |
 | Sound alerts | On | Silent health notifications are frequently ignored |
 | Chart interval | 60 sec | One bar per minute for clear per-minute blink pattern |
