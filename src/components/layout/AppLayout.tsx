@@ -1,10 +1,6 @@
 import { Outlet } from 'react-router-dom'
+import { useDetection } from '../../hooks/use-detection'
 import { TopNav } from './TopNav'
-
-interface AppLayoutProps {
-  isTrackingActive: boolean
-  onToggleTracking: () => void
-}
 
 const layoutStyle: React.CSSProperties = {
   minHeight: '100vh',
@@ -19,12 +15,22 @@ const contentStyle: React.CSSProperties = {
   flexDirection: 'column',
 }
 
-export function AppLayout({ isTrackingActive, onToggleTracking }: AppLayoutProps) {
+export function AppLayout() {
+  const detection = useDetection()
+
+  const handleToggleTracking = () => {
+    if (detection.isTracking) {
+      detection.stopCamera()
+    } else {
+      detection.startCamera()
+    }
+  }
+
   return (
     <div style={layoutStyle}>
       <TopNav
-        isTrackingActive={isTrackingActive}
-        onToggleTracking={onToggleTracking}
+        isTrackingActive={detection.isTracking}
+        onToggleTracking={handleToggleTracking}
       />
       <main style={contentStyle}>
         <Outlet />
