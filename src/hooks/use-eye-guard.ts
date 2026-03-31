@@ -108,6 +108,29 @@ export function useEyeGuard() {
   const sessionIdRef = useRef<number | null>(null)
   const sessionStartRef = useRef<Date | null>(null)
 
+  // Always-fresh snapshot of the values needed to persist a session.
+  // Stored in a ref so beforeunload / visibilitychange handlers are never
+  // stale (they are registered once inside an effect with [settingsLoading]
+  // deps and would otherwise capture the initial-render zero values).
+  const sessionStatsRef = useRef({
+    totalBlinks: 0,
+    blinkRate: 0,
+    stareAlerts: 0,
+    breaksTaken: 0,
+    breaksOffered: 0,
+    blinkThreshold: settings.blinkThreshold,
+  })
+  useEffect(() => {
+    sessionStatsRef.current = {
+      totalBlinks: detection.totalBlinks,
+      blinkRate: detection.blinkRate,
+      stareAlerts: detection.stareAlerts,
+      breaksTaken: alerts.breaksTaken,
+      breaksOffered: alerts.breaksOffered,
+      blinkThreshold: settings.blinkThreshold,
+    }
+  }, [detection.totalBlinks, detection.blinkRate, detection.stareAlerts, alerts.breaksTaken, alerts.breaksOffered, settings.blinkThreshold])
+
   const startSession = useCallback(async () => {
     try {
       const session = await sessionRepo.startSession()
@@ -118,51 +141,42 @@ export function useEyeGuard() {
     }
   }, [])
 
+  // No closure deps — reads everything from refs so it is never stale
+  // even when called from a beforeunload listener registered at mount.
   const endSession = useCallback(async () => {
     const id = sessionIdRef.current
     if (id === null) return
+    const { totalBlinks, stareAlerts, breaksTaken, breaksOffered, blinkThreshold } = sessionStatsRef.current
     try {
-      // Compute true session average: total blinks / session duration in minutes
       const sessionMinutes = sessionStartRef.current
         ? Math.max(1, (Date.now() - sessionStartRef.current.getTime()) / 60000)
         : 1
-      const sessionAvgBlinkRate = Math.round(detection.totalBlinks / sessionMinutes)
+      const sessionAvgBlinkRate = Math.round(totalBlinks / sessionMinutes)
 
       await sessionRepo.endSession(id, {
         avgBlinkRate: sessionAvgBlinkRate,
-        breaksOffered: alerts.breaksOffered,
-        breaksTaken: alerts.breaksTaken,
-        stareAlerts: detection.stareAlerts,
-        blinkThreshold: settings.blinkThreshold,
+        breaksOffered,
+        breaksTaken,
+        stareAlerts,
+        blinkThreshold,
       })
 
       const sessionMinutesRounded = Math.round(sessionMinutes)
+      const score = calculateScore({ avgBlinkRate: sessionAvgBlinkRate, breaksTaken, breaksOffered, stareAlerts, blinkThreshold })
 
-      const score = calculateScore({
-        avgBlinkRate: sessionAvgBlinkRate,
-        breaksTaken: alerts.breaksTaken,
-        breaksOffered: alerts.breaksOffered,
-        stareAlerts: detection.stareAlerts,
-        blinkThreshold: settings.blinkThreshold,
-      })
-
-      // Accumulate into today's daily stats — weighted average of blink rate
       const existing = await dailyStatsRepo.getByDate(todayString())
       const existingMinutes = existing?.totalScreenTime ?? 0
       const totalMinutes = existingMinutes + sessionMinutesRounded
       const weightedAvgBlink = totalMinutes > 0
-        ? Math.round(
-            ((existing?.avgBlinkRate ?? 0) * existingMinutes + sessionAvgBlinkRate * sessionMinutesRounded)
-            / totalMinutes
-          )
+        ? Math.round(((existing?.avgBlinkRate ?? 0) * existingMinutes + sessionAvgBlinkRate * sessionMinutesRounded) / totalMinutes)
         : sessionAvgBlinkRate
 
       await dailyStatsRepo.upsert(todayString(), {
         totalScreenTime: totalMinutes,
         avgBlinkRate: weightedAvgBlink,
-        breaksTaken: (existing?.breaksTaken ?? 0) + alerts.breaksTaken,
-        breaksSkipped: (existing?.breaksSkipped ?? 0) + (alerts.breaksOffered - alerts.breaksTaken),
-        stareAlerts: (existing?.stareAlerts ?? 0) + detection.stareAlerts,
+        breaksTaken: (existing?.breaksTaken ?? 0) + breaksTaken,
+        breaksSkipped: (existing?.breaksSkipped ?? 0) + (breaksOffered - breaksTaken),
+        stareAlerts: (existing?.stareAlerts ?? 0) + stareAlerts,
         score,
       })
     } catch (err) {
@@ -170,13 +184,7 @@ export function useEyeGuard() {
     }
     sessionIdRef.current = null
     sessionStartRef.current = null
-  }, [
-    detection.blinkRate,
-    detection.stareAlerts,
-    alerts.breaksOffered,
-    alerts.breaksTaken,
-    settings.blinkThreshold,
-  ])
+  }, []) // stable — all mutable values come from sessionStatsRef
 
   // Start session on mount (after settings loaded), end on unmount / page hide
   useEffect(() => {
@@ -185,17 +193,17 @@ export function useEyeGuard() {
     startSession()
 
     const handleVisibilityChange = () => {
-      // On tab hide: only save to DB on actual page unload, not tab switch
-      // Detection pauses automatically (rAF stops), but session stays alive
+      // On tab hide: checkpoint stats to DB without closing the session ID,
+      // so data isn't lost if the user closes mid-session.
+      // Reads from sessionStatsRef so values are always current (not stale closures).
       if (document.visibilityState === 'hidden') {
-        // Save current stats to DB without ending the session ID
-        // so data isn't lost if the user closes mid-session
+        const { totalBlinks, blinkRate, stareAlerts, breaksTaken, breaksOffered, blinkThreshold } = sessionStatsRef.current
         void dailyStatsRepo.getByDate(todayString()).then(async (existing) => {
           const sessionMins = sessionStartRef.current
             ? Math.max(1, (Date.now() - sessionStartRef.current.getTime()) / 60000)
             : 1
           const sessionMinsRounded = Math.round(sessionMins)
-          const checkpointAvg = Math.round(detection.totalBlinks / sessionMins)
+          const checkpointAvg = Math.round(totalBlinks / sessionMins)
           const existingMins = existing?.totalScreenTime ?? 0
           const totalMins = existingMins + sessionMinsRounded
           const weightedAvg = totalMins > 0
@@ -204,16 +212,10 @@ export function useEyeGuard() {
           await dailyStatsRepo.upsert(todayString(), {
             totalScreenTime: totalMins,
             avgBlinkRate: weightedAvg,
-            breaksTaken: (existing?.breaksTaken ?? 0) + alerts.breaksTaken,
-            breaksSkipped: (existing?.breaksSkipped ?? 0) + (alerts.breaksOffered - alerts.breaksTaken),
-            stareAlerts: (existing?.stareAlerts ?? 0) + detection.stareAlerts,
-            score: calculateScore({
-              avgBlinkRate: detection.blinkRate,
-              breaksTaken: alerts.breaksTaken,
-              breaksOffered: alerts.breaksOffered,
-              stareAlerts: detection.stareAlerts,
-              blinkThreshold: settings.blinkThreshold,
-            }),
+            breaksTaken: (existing?.breaksTaken ?? 0) + breaksTaken,
+            breaksSkipped: (existing?.breaksSkipped ?? 0) + (breaksOffered - breaksTaken),
+            stareAlerts: (existing?.stareAlerts ?? 0) + stareAlerts,
+            score: calculateScore({ avgBlinkRate: blinkRate, breaksTaken, breaksOffered, stareAlerts, blinkThreshold }),
           })
         })
       }
