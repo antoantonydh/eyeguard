@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useSettings } from '../../../hooks/use-settings'
 import { useDetection } from '../../../hooks/use-detection'
 import { userProfileRepo } from '../../../storage/user-profile-repository'
@@ -130,11 +130,9 @@ const dividerStyle: React.CSSProperties = { border: 'none', borderTop: '1px soli
 export function SettingsPage({ onReset }: { onReset?: () => void } = {}) {
   const { settings, loading, updateSettings } = useSettings()
   const detection = useDetection()
-  const [notifPermission, setNotifPermission] = useState<NotificationPermission>('default')
-
-  useEffect(() => {
-    if ('Notification' in window) setNotifPermission(Notification.permission)
-  }, [])
+  const [notifPermission, setNotifPermission] = useState<NotificationPermission>(() => {
+    return 'Notification' in window ? Notification.permission : 'default'
+  })
 
   const handleNativeNotifToggle = async (enabled: boolean) => {
     if (enabled && Notification.permission !== 'granted') {

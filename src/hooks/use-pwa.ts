@@ -23,9 +23,9 @@ window.addEventListener('beforeinstallprompt', (e) => {
 })
 
 export function usePwa(): PwaState {
-  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(
-    () => _capturedPrompt
-  )
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(() => {
+    return _capturedPrompt
+  })
   const [isInstalled, setIsInstalled] = useState(
     () => window.matchMedia('(display-mode: standalone)').matches
   )
@@ -38,13 +38,6 @@ export function usePwa(): PwaState {
   })
 
   useEffect(() => {
-    if (isInstalled) return
-
-    // Pick up any prompt captured before this hook mounted
-    if (_capturedPrompt && !installPrompt) {
-      setInstallPrompt(_capturedPrompt)
-    }
-
     const onPrompt = (e: Event) => {
       const prompt = e as BeforeInstallPromptEvent
       _capturedPrompt = prompt
@@ -62,7 +55,7 @@ export function usePwa(): PwaState {
       window.removeEventListener('beforeinstallprompt', onPrompt)
       window.removeEventListener('appinstalled', onInstalled)
     }
-  }, [isInstalled, installPrompt])
+  }, [])
 
   const install = useCallback(async () => {
     if (!installPrompt) return

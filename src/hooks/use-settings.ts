@@ -8,6 +8,19 @@ export function useSettings() {
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
 
+  useEffect(() => {
+    const reload = async () => {
+      const [s, p] = await Promise.all([
+        userProfileRepo.getSettings(),
+        userProfileRepo.getProfile(),
+      ])
+      setSettings(s)
+      setProfile(p ?? null)
+      setLoading(false)
+    }
+    reload()
+  }, [])
+
   const reload = useCallback(async () => {
     const [s, p] = await Promise.all([
       userProfileRepo.getSettings(),
@@ -17,10 +30,6 @@ export function useSettings() {
     setProfile(p ?? null)
     setLoading(false)
   }, [])
-
-  useEffect(() => {
-    reload()
-  }, [reload])
 
   const updateSettings = useCallback(async (partial: Partial<Settings>) => {
     await userProfileRepo.updateSettings(partial)

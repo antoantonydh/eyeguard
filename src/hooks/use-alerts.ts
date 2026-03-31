@@ -1,4 +1,5 @@
-import { useAlertsContext, type AlertsContextValue } from '../providers/AlertsProvider'
+import { useAlertsContext } from '../providers/alerts-context'
+import type { AlertsContextValue } from '../providers/alerts-types'
 
 export type { AlertsContextValue }
 

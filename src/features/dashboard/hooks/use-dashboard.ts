@@ -43,7 +43,6 @@ export function useDashboard() {
       })
     }
     loadToday()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settingsLoading])
 
   // ── Session lifecycle ──────────────────────────────────────────────────

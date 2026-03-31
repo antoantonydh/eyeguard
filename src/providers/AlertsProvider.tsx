@@ -1,41 +1,14 @@
 import {
-  createContext, useContext, useState, useEffect, useRef, useCallback, useMemo, type ReactNode,
+  useState, useEffect, useRef, useCallback, useMemo, type ReactNode,
 } from 'react'
-import type { Settings, FacePresence } from '../types'
+import type { Settings } from '../types'
 import { BreakTimer } from './break-timer'
-import { determineAlert, resetAlertCooldowns, type AlertState } from './alert-manager'
+import { determineAlert, resetAlertCooldowns } from './alert-manager'
 import { sendNativeNotification } from '../utils/notifications'
+import type { AlertsDetectionInput, AlertsContextValue } from './alerts-types'
+import { AlertsContext } from './alerts-context'
 
 const BREAK_TIMER_KEY = 'eyeguard_break_timer_start'
-
-export interface AlertsDetectionInput {
-  blinkRate: number
-  isStaring: boolean
-  secondsSinceLastBlink: number
-  lowBlinkDurationSeconds: number
-  facePresence: FacePresence
-  isTracking: boolean
-  totalBlinks: number
-}
-
-export interface AlertsContextValue {
-  alert: AlertState | null
-  isBreakActive: boolean
-  minutesUntilBreak: number
-  breaksOffered: number
-  breaksTaken: number
-  startBreak: () => void
-  skipBreak: () => void
-  resetBreakTimer: () => void
-}
-
-const AlertsContext = createContext<AlertsContextValue | null>(null)
-
-export function useAlertsContext(): AlertsContextValue {
-  const ctx = useContext(AlertsContext)
-  if (!ctx) throw new Error('useAlertsContext must be used inside <AlertsProvider>')
-  return ctx
-}
 
 interface AlertsProviderProps {
   children: ReactNode

@@ -1,43 +1,13 @@
 import {
-  createContext, useContext, useRef, useCallback, useState, useEffect, type ReactNode,
+  useRef, useCallback, useState, useEffect, type ReactNode,
 } from 'react'
 import type { Settings, FacePresence } from '../types'
-import { useCamera, type CameraDevice } from './use-camera'
+import { useCamera } from './use-camera'
 import { FaceTracker } from './face-tracker'
 import { BlinkDetector } from './blink-detector'
+import { DetectionContext } from './detection-context'
 
 const GRACE_PERIOD_MS = 15_000
-
-export interface DetectionContextValue {
-  blinkRate: number
-  isStaring: boolean
-  secondsSinceLastBlink: number
-  confidence: number
-  isTracking: boolean
-  totalBlinks: number
-  stareAlerts: number
-  lowBlinkDurationSeconds: number
-  facePresence: FacePresence
-  cameraStatus: 'idle' | 'requesting' | 'active' | 'denied' | 'error'
-  stream: MediaStream | null
-  devices: CameraDevice[]
-  selectedDeviceId: string
-  videoRef: React.RefObject<HTMLVideoElement | null>
-  startCamera: () => Promise<void>
-  stopCamera: () => void
-  switchCamera: (deviceId: string) => Promise<void>
-  isStreamAlive: () => boolean
-  startTracking: () => Promise<void>
-  stopTracking: () => void
-}
-
-const DetectionContext = createContext<DetectionContextValue | null>(null)
-
-export function useDetectionContext(): DetectionContextValue {
-  const ctx = useContext(DetectionContext)
-  if (!ctx) throw new Error('useDetectionContext must be used inside <DetectionProvider>')
-  return ctx
-}
 
 interface DetectionProviderProps {
   children: ReactNode
@@ -62,7 +32,7 @@ export function DetectionProvider({ children, settings, baselineEAR }: Detection
   const stareAlertCountRef = useRef(0)
   const wasStaringRef = useRef(false)
   const lowBlinkStartRef = useRef<number | null>(null)
-  const lastFaceSeenRef = useRef<number>(Date.now())
+  const lastFaceSeenRef = useRef<number | null>(null)
   const presenceRef = useRef<FacePresence>('absent')
   const wantTrackingRef = useRef(false)
 
@@ -91,6 +61,7 @@ export function DetectionProvider({ children, settings, baselineEAR }: Detection
     const fpsInterval = 1000 / settings.cameraFps
     lastFaceSeenRef.current = Date.now()
     presenceRef.current = 'present'
+    wantTrackingRef.current = true
 
     const processFrame = (timestamp: number) => {
       if (timestamp - lastFrameRef.current < fpsInterval) {
@@ -136,7 +107,7 @@ export function DetectionProvider({ children, settings, baselineEAR }: Detection
           lowBlinkDurationSeconds, facePresence: 'present',
         })
       } else {
-        const timeSinceFace = now - lastFaceSeenRef.current
+        const timeSinceFace = lastFaceSeenRef.current !== null ? now - lastFaceSeenRef.current : GRACE_PERIOD_MS
         const newPresence: FacePresence = timeSinceFace < GRACE_PERIOD_MS ? 'grace' : 'absent'
         presenceRef.current = newPresence
 
@@ -168,11 +139,19 @@ export function DetectionProvider({ children, settings, baselineEAR }: Detection
   }, [])
 
   // Auto-start when stream arrives and we want tracking
+  const shouldTrackRef = useRef(false)
   useEffect(() => {
-    if (wantTrackingRef.current && camera.stream && !state.isTracking) {
-      startTracking()
+    const needsStart = wantTrackingRef.current && camera.stream && !state.isTracking
+    shouldTrackRef.current = needsStart
+  }, [camera.stream, state.isTracking])
+
+  useEffect(() => {
+    if (shouldTrackRef.current) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      startTracking().catch(() => {})
+      shouldTrackRef.current = false
     }
-  }, [camera.stream, state.isTracking, startTracking])
+  }, [startTracking])
 
   // Auto-start on mount when already calibrated (baselineEAR > 0)
   const hasAutoStarted = useRef(false)

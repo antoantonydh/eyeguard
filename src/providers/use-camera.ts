@@ -30,10 +30,16 @@ export function useCamera() {
     setDevices(cams)
   }, [])
 
+  const hasRefreshedRef = useRef(false)
   useEffect(() => {
-    refreshDevices()
-    navigator.mediaDevices.addEventListener('devicechange', refreshDevices)
-    return () => navigator.mediaDevices.removeEventListener('devicechange', refreshDevices)
+    if (!hasRefreshedRef.current) {
+      hasRefreshedRef.current = true
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      refreshDevices().catch(() => {})
+    }
+    const mountListener = () => { refreshDevices().catch(() => {}) }
+    navigator.mediaDevices.addEventListener('devicechange', mountListener)
+    return () => navigator.mediaDevices.removeEventListener('devicechange', mountListener)
   }, [refreshDevices])
 
   const start = useCallback(async (deviceId?: string) => {

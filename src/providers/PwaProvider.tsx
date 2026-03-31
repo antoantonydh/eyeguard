@@ -1,15 +1,8 @@
-import { createContext, useContext, type ReactNode } from 'react'
-import { usePwa, type PwaState } from '../hooks/use-pwa'
-
-const PwaContext = createContext<PwaState | null>(null)
+import type { ReactNode } from 'react'
+import { usePwa } from '../hooks/use-pwa'
+import { PwaContext } from './pwa-context'
 
 export function PwaProvider({ children }: { children: ReactNode }) {
   const pwa = usePwa()
   return <PwaContext.Provider value={pwa}>{children}</PwaContext.Provider>
-}
-
-export function usePwaContext(): PwaState {
-  const ctx = useContext(PwaContext)
-  if (!ctx) throw new Error('usePwaContext must be used inside <PwaProvider>')
-  return ctx
 }
