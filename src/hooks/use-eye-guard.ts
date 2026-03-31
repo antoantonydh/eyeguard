@@ -332,16 +332,18 @@ export function useEyeGuard() {
     loadHistoricalData()
   }, [settingsLoading, settings.chartInterval, settings.blinkThreshold])
 
-  // Keep a fresh reference to blinkRate and break state for the interval callback
+  // Keep fresh references for the interval callback (avoids stale closures)
   const isBreakActiveRef = useRef(false)
+  const facePresenceRef = useRef(detection.facePresence)
 
   // Also update chart immediately when blinkRate first becomes non-zero
   useEffect(() => {
     blinkRateRef.current = detection.blinkRate
     isBreakActiveRef.current = alerts.isBreakActive
+    facePresenceRef.current = detection.facePresence
 
     // Add first data point as soon as we get a real reading (append to historical, don't replace)
-    if (detection.blinkRate > 0 && !hasFirstDataPointRef.current && detection.isTracking && !alerts.isBreakActive) {
+    if (detection.blinkRate > 0 && !hasFirstDataPointRef.current && detection.isTracking && !alerts.isBreakActive && detection.facePresence === 'present') {
       hasFirstDataPointRef.current = true
       const entry: BlinkRateEntry = { time: new Date(), rate: detection.blinkRate }
       chartDataRef.current = [...chartDataRef.current.slice(-MAX_CHART_POINTS + 1), entry]
@@ -350,7 +352,7 @@ export function useEyeGuard() {
     if (!detection.isTracking) {
       hasFirstDataPointRef.current = false
     }
-  }, [detection.blinkRate, detection.isTracking])
+  }, [detection.blinkRate, detection.isTracking, detection.facePresence, alerts.isBreakActive])
 
   useEffect(() => {
     if (!detection.isTracking) return
@@ -360,8 +362,8 @@ export function useEyeGuard() {
 
     const interval = setInterval(() => {
       const rate = blinkRateRef.current
-      // Only record when face is present, we have actual data, and not on a break
-      if (rate > 0 && !isBreakActiveRef.current) {
+      // Only record when face is actually present, we have real data, and not on a break
+      if (rate > 0 && !isBreakActiveRef.current && facePresenceRef.current === 'present') {
         const entry: BlinkRateEntry = { time: new Date(), rate }
         chartDataRef.current = [...chartDataRef.current.slice(-MAX_CHART_POINTS + 1), entry]
         setChartData([...chartDataRef.current])
@@ -381,7 +383,9 @@ export function useEyeGuard() {
     if (!detection.isTracking) return
 
     let currentType: Segment['type']
-    if (alerts.isBreakActive) {
+    if (detection.facePresence !== 'present') {
+      currentType = 'away'
+    } else if (alerts.isBreakActive) {
       currentType = 'break'
     } else if (detection.isStaring) {
       currentType = 'low-blink'
@@ -408,7 +412,7 @@ export function useEyeGuard() {
       lastSegmentTypeRef.current = currentType
       segmentStartRef.current = Date.now()
     }
-  }, [alerts.isBreakActive, detection.isStaring, detection.blinkRate, detection.isTracking, settings.blinkThreshold])
+  }, [alerts.isBreakActive, detection.facePresence, detection.isStaring, detection.blinkRate, detection.isTracking, settings.blinkThreshold])
 
   // Total session time in minutes
   const [totalSessionTime, setTotalSessionTime] = useState(0)

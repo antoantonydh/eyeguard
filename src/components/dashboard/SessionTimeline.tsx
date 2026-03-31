@@ -1,4 +1,4 @@
-export type SegmentType = 'healthy' | 'low-blink' | 'break'
+export type SegmentType = 'healthy' | 'low-blink' | 'break' | 'away'
 
 export interface Segment {
   type: SegmentType
@@ -15,12 +15,14 @@ const SEGMENT_COLORS: Record<SegmentType, string> = {
   healthy: '#22c55e',
   'low-blink': '#f97316',
   break: '#3b82f6',
+  away: '#475569',
 }
 
 const SEGMENT_LABELS: Record<SegmentType, string> = {
   healthy: 'Healthy',
   'low-blink': 'Low blink',
   break: 'Break',
+  away: 'Away',
 }
 
 export function SessionTimeline({ segments = [], totalMinutes }: SessionTimelineProps) {
@@ -83,7 +85,7 @@ export function SessionTimeline({ segments = [], totalMinutes }: SessionTimeline
             })}
           </div>
           <div style={legendStyle}>
-            {(['healthy', 'low-blink', 'break'] as SegmentType[]).map(type => (
+            {(['healthy', 'low-blink', 'break', 'away'] as SegmentType[]).map(type => (
               <div key={type} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <div
                   style={{
