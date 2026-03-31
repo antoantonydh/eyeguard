@@ -1,5 +1,5 @@
 import type { FacePresence } from '../../../types'
-import type { CameraDevice } from '../../../hooks/use-camera'
+import type { CameraDevice } from '../../../providers/use-camera'
 
 interface CameraStatusBarProps {
   isActive?: boolean

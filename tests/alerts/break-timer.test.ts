@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { BreakTimer } from '../../src/alerts/break-timer'
+import { BreakTimer } from '../../src/providers/break-timer'
 
 describe('BreakTimer', () => {
   let timer: BreakTimer

@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { usePwaContext } from '../../context/PwaContext'
+import { usePwaContext } from '../../providers/PwaProvider'
 
 interface TopNavProps {
   isTrackingActive: boolean

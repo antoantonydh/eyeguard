@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { determineAlert, resetAlertCooldowns, type DetectionState } from '../../src/alerts/alert-manager'
+import { determineAlert, resetAlertCooldowns, type DetectionState } from '../../src/providers/alert-manager'
 
 describe('determineAlert', () => {
   const baseState: DetectionState = {
