@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { FaceTracker } from '../../../detection/face-tracker'
-import { CalibrationSession } from '../../../detection/calibrator'
+import { FaceTracker } from '../../../providers/face-tracker'
+import { CalibrationSession } from '../../../providers/calibrator'
 import { useDetection } from '../../../hooks/use-detection'
 
 interface Props {
