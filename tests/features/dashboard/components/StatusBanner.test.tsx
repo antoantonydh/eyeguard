@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import { StatusBanner } from '../../../../src/components/dashboard/StatusBanner'
+import { StatusBanner } from '../../../../src/features/dashboard/components/StatusBanner'
 
 describe('StatusBanner', () => {
   it('shows healthy status when blink rate is good', () => {
