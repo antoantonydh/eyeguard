@@ -1,6 +1,6 @@
 import { db } from '../db/database'
 import type { Settings } from '../types'
-import { DEFAULT_SETTINGS } from '../types'
+import { DEFAULT_SETTINGS } from '../config/defaults'
 
 export const userProfileRepo = {
   async getProfile() {

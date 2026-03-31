@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { db } from '../../src/db/database'
 import { userProfileRepo } from '../../src/storage/user-profile-repository'
-import { DEFAULT_SETTINGS } from '../../src/types'
+import { DEFAULT_SETTINGS } from '../../src/config/defaults'
 
 describe('UserProfileRepository', () => {
   beforeEach(async () => {

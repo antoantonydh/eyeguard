@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import type { Settings, UserProfile } from '../types'
-import { DEFAULT_SETTINGS } from '../types'
+import { DEFAULT_SETTINGS } from '../config/defaults'
 import { userProfileRepo } from '../storage/user-profile-repository'
 
 export function useSettings() {
