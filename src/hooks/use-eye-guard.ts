@@ -6,7 +6,7 @@ import { useSettings } from './use-settings'
 import { sessionRepo } from '../storage/session-repository'
 import { blinkEventRepo } from '../storage/blink-event-repository'
 import { dailyStatsRepo } from '../storage/daily-stats-repository'
-import { calculateScore } from '../storage/score-calculator'
+import { calculateScore } from '../utils/score-calculator'
 import type { BlinkRateEntry } from '../components/dashboard/BlinkRateChart'
 import type { Segment } from '../components/dashboard/SessionTimeline'
 

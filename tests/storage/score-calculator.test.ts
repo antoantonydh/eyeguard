@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { calculateScore } from '../../src/storage/score-calculator'
+import { calculateScore } from '../../src/utils/score-calculator'
 
 describe('calculateScore', () => {
   it('returns 100 for perfect session', () => {
