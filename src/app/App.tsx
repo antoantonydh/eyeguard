@@ -5,15 +5,14 @@ import { DetectionProvider } from '../providers/DetectionProvider'
 import { AlertsProvider, type AlertsDetectionInput } from '../providers/AlertsProvider'
 import { PwaProvider, usePwaContext } from '../providers/PwaProvider'
 import { useDetection } from '../hooks/use-detection'
-import { useAlerts } from '../hooks/use-alerts'
 import { useSettings } from '../hooks/use-settings'
 import { requestNotificationPermission } from '../utils/notifications'
 import { AppLayout } from '../components/layout/AppLayout'
-import { DashboardPage } from '../components/dashboard/DashboardPage'
-import { HistoryPage } from '../components/history/HistoryPage'
-import { SettingsPage } from '../components/settings/SettingsPage'
-import { OverlayManager } from '../components/overlays/OverlayManager'
-import { OnboardingFlow } from '../components/onboarding/OnboardingFlow'
+import { DashboardPage } from '../features/dashboard/components/DashboardPage'
+import { HistoryPage } from '../features/history/components/HistoryPage'
+import { SettingsPage } from '../features/settings/components/SettingsPage'
+import { OverlayManager } from '../features/overlays/components/OverlayManager'
+import { OnboardingFlow } from '../features/onboarding/components/OnboardingFlow'
 
 // Layer 2: inside DetectionProvider — bridges detection state to AlertsProvider
 function AppWithAlerts({
@@ -54,9 +53,6 @@ function AppRoutes({
   isCalibrated: boolean
   reloadSettings: () => void
 }) {
-  const detection = useDetection()
-  const alerts = useAlerts()
-
   useEffect(() => {
     if (settings.nativeNotifications) requestNotificationPermission()
   }, [settings.nativeNotifications])
@@ -77,9 +73,6 @@ function AppRoutes({
     return (
       <OnboardingFlow
         onComplete={handleOnboardingComplete}
-        cameraStatus={detection.cameraStatus}
-        stream={detection.stream}
-        onStartCamera={detection.startCamera}
       />
     )
   }
@@ -94,27 +87,6 @@ function AppRoutes({
               index
               element={
                 <DashboardPage
-                  blinkRate={detection.blinkRate}
-                  minutesUntilBreak={alerts.minutesUntilBreak}
-                  blinkThreshold={settings.blinkThreshold}
-                  score={0}
-                  breaksTaken={alerts.breaksTaken}
-                  breaksOffered={alerts.breaksOffered}
-                  avgBlinkRate={detection.blinkRate}
-                  cameraActive={detection.cameraStatus === 'active'}
-                  cameraConfidence={detection.confidence}
-                  cameraFps={settings.cameraFps}
-                  stream={detection.stream}
-                  isStaring={detection.isStaring}
-                  secondsSinceLastBlink={detection.secondsSinceLastBlink}
-                  totalBlinks={detection.totalBlinks}
-                  facePresence={detection.facePresence}
-                  isBreakActive={alerts.isBreakActive}
-                  breakCountdown={alerts.alert?.type === 'break' ? (alerts.alert.countdown ?? 0) : 0}
-                  cameraDevices={detection.devices}
-                  selectedCameraId={detection.selectedDeviceId}
-                  onSwitchCamera={detection.switchCamera}
-                  onCameraPause={detection.stopCamera}
                   onRecalibrate={handleRecalibrate}
                 />
               }
@@ -127,12 +99,7 @@ function AppRoutes({
           </Route>
         </Routes>
       </BrowserRouter>
-      <OverlayManager
-        alert={alerts.alert}
-        soundEnabled={settings.soundEnabled}
-        onStartBreak={alerts.startBreak}
-        onSkipBreak={alerts.skipBreak}
-      />
+      <OverlayManager />
     </>
   )
 }
