@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { BlinkDetector } from '../../src/detection/blink-detector'
+import { BlinkDetector } from '../../src/providers/blink-detector'
 
 describe('BlinkDetector', () => {
   let detector: BlinkDetector

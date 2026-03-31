@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import { DailyScore } from '../../../src/components/dashboard/DailyScore'
+import { DailyScore } from '../../../../src/features/dashboard/components/DailyScore'
 
 describe('DailyScore', () => {
   it('renders the score value', () => {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { calculateEAR, type EyeLandmarks } from '../../src/detection/ear-calculator'
+import { calculateEAR, type EyeLandmarks } from '../../src/providers/ear-calculator'
 
 describe('calculateEAR', () => {
   const openEye: EyeLandmarks = {

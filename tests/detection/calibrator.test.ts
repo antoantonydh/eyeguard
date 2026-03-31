@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { CalibrationSession } from '../../src/detection/calibrator'
+import { CalibrationSession } from '../../src/providers/calibrator'
 
 describe('CalibrationSession', () => {
   it('calculates baseline EAR from samples', () => {

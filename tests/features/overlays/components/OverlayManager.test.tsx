@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import { OverlayManager } from '../../../src/components/overlays/OverlayManager'
-import type { AlertState } from '../../../src/alerts/alert-manager'
+import { OverlayManager } from '../../../../src/components/overlays/OverlayManager'
+import type { AlertState } from '../../../../src/alerts/alert-manager'
 
 describe('OverlayManager', () => {
   const noop = vi.fn()
