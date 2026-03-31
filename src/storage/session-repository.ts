@@ -1,6 +1,6 @@
 import { db } from '../db/database'
 import type { Session } from '../types'
-import { calculateScore } from './score-calculator'
+import { calculateScore } from '../utils/score-calculator'
 
 interface EndSessionMetrics {
   avgBlinkRate: number
